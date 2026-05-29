@@ -1,0 +1,302 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* In-Sync Design System - Brand Colors & Tokens */
+@layer base {
+  :root {
+    /* Brand Colors - Primary (Blue Theme) */
+    --primary-blue: 217 91% 60%;
+    --deep-blue: 222 47% 15%;
+    --analytics-blue: 217 70% 50%;
+    --success-green: 142 76% 36%;
+
+    /* Neutrals */
+    --deep-slate: 222 30% 20%;
+    --medium-gray: 215 14% 40%;
+    --charcoal: 220 13% 26%;
+
+    /* Accents - Energy (Neutral) */
+    --coral: 0 0% 100%;
+    --soft-coral: 0 0% 98%;
+    --warm-coral: 0 0% 96%;
+    --salmon: 0 0% 94%;
+
+    /* Accents - Supporting (Enhanced) */
+    --vibrant-yellow: 48 100% 58%;
+    --soft-yellow: 50 94% 68%;
+    --purple: 280 85% 65%;
+    --lavender: 280 70% 75%;
+    --sky-blue: 217 85% 75%;
+    --light-blue: 217 80% 85%;
+
+    /* Neutrals - Light */
+    --light-neutral: 0 14% 81%;
+    --sage: 78 11% 65%;
+    --gray-green: 185 7% 52%;
+
+    /* Semantic Colors */
+    --success: 142 76% 36%;
+    --success-bg: 142 56% 92%;
+    --warning: 50 94% 68%;
+    --warning-bg: 48 100% 95%;
+    --error: 1 98% 69%;
+    --error-bg: 0 100% 95%;
+    --info: 217 85% 75%;
+    --info-bg: 217 76% 95%;
+
+    /* Visual Effects */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(222 47% 35%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(222 47% 15%) 0%, hsl(222 50% 25%) 100%);
+    --gradient-purple: linear-gradient(135deg, hsl(280 85% 65%) 0%, hsl(280 70% 75%) 100%);
+    --shadow-vibrant: 0 12px 40px -8px hsl(217 91% 60% / 0.35), 0 4px 12px -4px hsl(217 91% 60% / 0.2);
+    --shadow-glow: 0 8px 32px hsl(217 91% 60% / 0.25), 0 0 60px hsl(217 91% 60% / 0.15);
+    --shadow-accent: 0 12px 40px -8px hsl(222 47% 15% / 0.4), 0 4px 16px -4px hsl(222 47% 15% / 0.3);
+    --shadow-deep: 0 20px 60px -12px hsl(222 47% 15% / 0.5), 0 8px 24px -8px hsl(222 47% 15% / 0.3);
+    --shadow-3d: 0 15px 35px -10px rgba(0, 0, 0, 0.2), 0 8px 20px -8px rgba(0, 0, 0, 0.15), 0 2px 8px -2px rgba(0, 0, 0, 0.1);
+
+    /* Sidebar Theme - Softer Navy Blue */
+    --sidebar-bg: 222 35% 24%;
+    --sidebar-bg-hover: 217 30% 32%;
+    --sidebar-active: 217 91% 60%;
+    --sidebar-text: 0 0% 100%;
+    --sidebar-text-muted: 215 20% 75%;
+    --sidebar-border: 217 28% 35%;
+
+    /* Trend Indicators */
+    --trend-up: 142 76% 36%;
+    --trend-down: 0 84% 60%;
+
+    /* Design System Tokens */
+    --background: 220 25% 96%;
+    --foreground: var(--deep-blue);
+    
+    --card: 0 0% 100%;
+    --card-foreground: var(--deep-blue);
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--deep-blue);
+    
+    --primary: var(--primary-blue);
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: var(--purple);
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 220 20% 96%;
+    --muted-foreground: var(--medium-gray);
+    
+    --accent: var(--deep-blue);
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: var(--error);
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 220 20% 90%;
+    --input: 220 20% 90%;
+    --ring: var(--primary-blue);
+    
+    --chart-1: var(--primary-blue);
+    --chart-2: var(--analytics-blue);
+    --chart-3: var(--purple);
+    --chart-4: 142 76% 36%;
+    --chart-5: var(--success-green);
+
+    /* Sidebar semantic tokens */
+    --sidebar-background: var(--sidebar-bg);
+    --sidebar-foreground: var(--sidebar-text);
+    --sidebar-primary: var(--sidebar-active);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: var(--sidebar-bg-hover);
+    --sidebar-accent-foreground: var(--sidebar-text);
+    --sidebar-border: var(--sidebar-border);
+    --sidebar-ring: var(--sidebar-active);
+    
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark mode tokens */
+    --background: 222 30% 10%;
+    --foreground: 0 0% 98%;
+    
+    --card: 222 25% 14%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 222 25% 14%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 217 91% 65%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 280 85% 70%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 222 20% 18%;
+    --muted-foreground: 215 14% 65%;
+    
+    --accent: 217 50% 25%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: var(--error);
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 222 20% 22%;
+    --input: 222 20% 22%;
+    --ring: 217 91% 65%;
+    
+    --chart-1: 217 91% 65%;
+    --chart-2: 217 70% 55%;
+    --chart-3: 280 85% 70%;
+    --chart-4: 142 76% 40%;
+    --chart-5: 142 70% 45%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 65%) 0%, hsl(222 50% 40%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(222 47% 20%) 0%, hsl(222 50% 30%) 100%);
+    --gradient-purple: linear-gradient(135deg, hsl(280 85% 70%) 0%, hsl(280 70% 78%) 100%);
+    --shadow-vibrant: 0 8px 30px hsl(217 91% 65% / 0.35);
+    --shadow-glow: 0 0 40px hsl(217 91% 65% / 0.25);
+    --shadow-accent: 0 8px 30px hsl(222 47% 20% / 0.4);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Gradient Text */
+  .gradient-text-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-accent {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-purple {
+    background: var(--gradient-purple);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Shadows */
+  .shadow-vibrant {
+    box-shadow: var(--shadow-vibrant);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-accent {
+    box-shadow: var(--shadow-accent);
+  }
+
+  .shadow-deep {
+    box-shadow: var(--shadow-deep);
+  }
+
+  .shadow-3d {
+    box-shadow: var(--shadow-3d);
+  }
+
+  /* 3D Transform Effects */
+  .transform-3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  .lift-3d {
+    @apply transition-all duration-300;
+    transform: translateY(0) rotateX(0deg);
+  }
+
+  .lift-3d:hover {
+    transform: translateY(-8px) rotateX(2deg);
+    box-shadow: var(--shadow-deep);
+  }
+
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-deep;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-glow;
+  }
+
+  .hover-3d {
+    @apply transition-all duration-500 hover:-translate-y-3;
+    transform-style: preserve-3d;
+  }
+
+  .hover-3d:hover {
+    box-shadow: var(--shadow-deep);
+    transform: translateY(-12px) rotateX(3deg) scale(1.02);
+  }
+}
+
+/* Custom Component Styles */
+@layer components {
+  .glass-card {
+    @apply bg-white/95 dark:bg-card/95 backdrop-blur-lg border border-border/50 rounded-xl shadow-deep hover:shadow-vibrant transition-all duration-300;
+    transform: translateY(-4px) translateZ(0);
+  }
+
+  .stat-card {
+    @apply p-6 rounded-xl border border-border/30 bg-card text-card-foreground shadow-3d hover:shadow-deep hover-3d transition-all duration-300;
+    transform: translateY(-6px);
+  }
+
+  .gradient-border {
+    @apply relative before:absolute before:inset-0 before:rounded-xl before:p-[2px] before:bg-gradient-to-r before:from-[hsl(var(--primary-blue))] before:to-[hsl(var(--deep-blue))] before:-z-10;
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-deep);
+  }
+
+  .btn-primary {
+    @apply bg-[hsl(222,47%,15%)] hover:bg-[hsl(222,47%,20%)] text-white shadow-vibrant hover:shadow-glow hover:-translate-y-1 transition-all duration-300;
+  }
+
+  .btn-secondary {
+    @apply bg-[hsl(var(--purple))] hover:bg-[hsl(var(--lavender))] text-white shadow-accent hover:shadow-deep hover:-translate-y-1 transition-all duration-300;
+  }
+
+  .btn-accent {
+    @apply bg-[hsl(var(--coral))] hover:bg-[hsl(var(--warm-coral))] text-white shadow-accent hover:shadow-deep hover:-translate-y-1 transition-all duration-300;
+  }
+
+  /* Sidebar Menu Button Hover Override */
+  [data-sidebar="menu-button"]:not([data-active="true"]):hover {
+    background-color: hsl(217, 30%, 32%) !important;
+    color: white !important;
+  }
+
+  [data-sidebar="menu-button"]:not([data-active="true"]):hover svg {
+    color: white !important;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

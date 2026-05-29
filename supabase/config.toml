@@ -1,0 +1,43 @@
+project_id = "htdwkhtfdifwajdkkpul"
+
+[functions.manage-org]
+verify_jwt = false
+
+[functions.bootstrap-platform-admin]
+verify_jwt = false
+
+[functions.platform-list-users]
+verify_jwt = true
+
+[functions.bulk-import-clients]
+verify_jwt = true
+
+[functions.bulk-import-candidates]
+verify_jwt = true
+
+[functions.parse-resume]
+verify_jwt = false
+
+[functions.create-import-session]
+verify_jwt = true
+
+[functions.process-import-hybrid]
+verify_jwt = true
+
+[functions.cancel-import]
+verify_jwt = true
+
+[functions.revert-import]
+verify_jwt = true
+
+[functions.get-import-history]
+verify_jwt = true
+
+[functions.verify-pan]
+verify_jwt = false
+
+[functions.aadhaar-send-otp]
+verify_jwt = false
+
+[functions.aadhaar-verify-otp]
+verify_jwt = false
