@@ -777,7 +777,7 @@ DECLARE
   assigned_user_data RECORD;
   assigned_by_data RECORD;
   supabase_url TEXT := 'https://htdwkhtfdifwajdkkpul.supabase.co';
-  supabase_anon_key TEXT := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0ZHdraHRmZGlmd2FqZGtrcHVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMTg4MzQsImV4cCI6MjA5NDY5NDgzNH0.XLkX0XJEMvOgvjFgS52J69HXErR2QjEPdDc09iUk_E8';
+  supabase_anon_key TEXT := 'sb_publishable_H2TPPQeNEI3pcoGbaR3GKg_tJ6Axc8m';
 BEGIN
   IF (TG_OP = 'INSERT') OR (OLD.assigned_to IS DISTINCT FROM NEW.assigned_to) THEN
     IF NEW.assigned_to IS NOT NULL AND NEW.assigned_to != NEW.assigned_by THEN
