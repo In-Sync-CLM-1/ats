@@ -1,20 +1,27 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CallHistory } from "@/components/CallHistory";
 import { CandidateScoreCard } from "@/components/CandidateScoreCard";
 import { AIScreeningButton } from "@/components/AIScreeningButton";
+import { ExotelCallDialog } from "@/components/ExotelCallDialog";
+import { WhatsAppDialog } from "@/components/WhatsAppDialog";
+import { EmailComposeDialog } from "@/components/EmailComposeDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, Mail, MapPin, Briefcase, GraduationCap, Calendar, FileText, ExternalLink, ArrowLeft, Star, Download } from "lucide-react";
+import { Phone, Mail, MapPin, Briefcase, GraduationCap, Calendar, FileText, ExternalLink, ArrowLeft, Star, Download, MessageCircle } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [callDialogOpen, setCallDialogOpen] = useState(false);
+  const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   const { data: candidate, isLoading } = useQuery({
     queryKey: ['candidate-detail', id],
@@ -77,26 +84,121 @@ export default function CandidateDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/candidates')}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">
-            {candidate.first_name} {candidate.last_name}
-          </h1>
-          <div className="flex flex-wrap gap-2 mt-2">
-            <Badge variant={
-              candidate.current_status === 'hired' ? 'default' :
-              candidate.current_status === 'interview' ? 'secondary' :
-              candidate.current_status === 'rejected' ? 'destructive' :
-              'outline'
-            }>
-              {candidate.current_status.replace('_', ' ').toUpperCase()}
-            </Badge>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/candidates')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">
+              {candidate.first_name} {candidate.last_name}
+            </h1>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Badge variant={
+                candidate.current_status === 'hired' ? 'default' :
+                candidate.current_status === 'interview' ? 'secondary' :
+                candidate.current_status === 'rejected' ? 'destructive' :
+                'outline'
+              }>
+                {candidate.current_status.replace('_', ' ').toUpperCase()}
+              </Badge>
+            </div>
           </div>
         </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-2">
+          {candidate.phone && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setCallDialogOpen(true)}
+            >
+              <Phone className="h-4 w-4 text-green-600" />
+              Call
+            </Button>
+          )}
+          {candidate.phone && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setWhatsappDialogOpen(true)}
+            >
+              <MessageCircle className="h-4 w-4 text-green-500" />
+              WhatsApp
+            </Button>
+          )}
+          {candidate.email && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setEmailDialogOpen(true)}
+            >
+              <Mail className="h-4 w-4 text-blue-500" />
+              Email
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Dialogs */}
+      {candidate.phone && (
+        <ExotelCallDialog
+          open={callDialogOpen}
+          onOpenChange={setCallDialogOpen}
+          candidateData={{
+            id: candidate.id,
+            first_name: candidate.first_name,
+            last_name: candidate.last_name,
+            phone: candidate.phone,
+            email: candidate.email,
+            designation: candidate.position_applied_for,
+            current_company: candidate.current_company,
+            position_applied_for: candidate.position_applied_for,
+          }}
+        />
+      )}
+      {candidate.phone && (
+        <WhatsAppDialog
+          open={whatsappDialogOpen}
+          onOpenChange={setWhatsappDialogOpen}
+          candidateData={{
+            id: candidate.id,
+            first_name: candidate.first_name,
+            last_name: candidate.last_name,
+            phone: candidate.phone,
+            email: candidate.email,
+            designation: candidate.position_applied_for,
+            current_company: candidate.current_company,
+            position_applied_for: candidate.position_applied_for,
+          }}
+        />
+      )}
+      {candidate.email && (
+        <EmailComposeDialog
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
+          recipientData={{
+            id: candidate.id,
+            first_name: candidate.first_name,
+            last_name: candidate.last_name,
+            email: candidate.email,
+            phone: candidate.phone,
+            phone_secondary: candidate.phone_secondary,
+            position_applied_for: candidate.position_applied_for,
+            current_company: candidate.current_company,
+            current_status: candidate.current_status,
+            interview_stage: candidate.interview_stage,
+            total_experience_years: candidate.total_experience_years,
+            current_ctc_lakhs: candidate.current_ctc_lakhs,
+            expected_ctc_lakhs: candidate.expected_ctc_lakhs,
+            latest_disposition: candidate.latest_disposition,
+          }}
+        />
+      )}
 
       <Tabs defaultValue="details">
         <TabsList className="grid w-full max-w-xl grid-cols-4">
