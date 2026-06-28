@@ -18,11 +18,6 @@ ALTER TABLE public.organizations
 --
 --
 
-\restrict 24N2FKh1r3OIQRBZt8WsDfoFB6taGva4UhdRq70yaQDzk6w64N2ORAI4nZDfJLK
-
-
-
-
 
 --
 -- Name: organization_settings; Type: TABLE; Schema: public; Owner: -
@@ -749,7 +744,6 @@ ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
 --
 --
 
-\unrestrict 24N2FKh1r3OIQRBZt8WsDfoFB6taGva4UhdRq70yaQDzk6w64N2ORAI4nZDfJLK
 -- PART C - enforcement functions (adapted from globalcrm reference)
 -- ats keeps its own user_roles-based is_platform_admin(); not redefined here.
 -- get_user_org_id reads profiles.org_id (single-org model, matching globalcrm).
