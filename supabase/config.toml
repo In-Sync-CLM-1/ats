@@ -45,6 +45,15 @@ verify_jwt = false
 [functions.bolna-ats-webhook]
 verify_jwt = false
 
+[functions.send-onboarding-otp]
+verify_jwt = false
+
+[functions.verify-onboarding-otp]
+verify_jwt = false
+
+[functions.analyze-onboarding-document]
+verify_jwt = true
+
 [functions.candidate-score]
 verify_jwt = true
 

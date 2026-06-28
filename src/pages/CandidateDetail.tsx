@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrg } from "@/contexts/OrgContext";
 import { CallHistory } from "@/components/CallHistory";
 import { CandidateScoreCard } from "@/components/CandidateScoreCard";
 import { AIScreeningButton } from "@/components/AIScreeningButton";
@@ -12,13 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, Mail, MapPin, Briefcase, GraduationCap, Calendar, FileText, ExternalLink, ArrowLeft, Star, Download, MessageCircle } from "lucide-react";
+import { Phone, Mail, MapPin, Briefcase, GraduationCap, Calendar, FileText, ExternalLink, ArrowLeft, Star, Download, MessageCircle, ClipboardCheck, Copy } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { currentOrg } = useOrg();
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
@@ -36,6 +39,34 @@ export default function CandidateDetail() {
       return data;
     },
     enabled: !!id,
+  });
+
+  // Fetch onboarding submission for this candidate
+  const { data: onboardingSubmission } = useQuery({
+    queryKey: ["onboarding-submission-candidate", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("onboarding_submissions")
+        .select("id, status, created_at, onboarding_forms(slug)")
+        .eq("candidate_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Fetch active onboarding forms for this org (for link generation)
+  const { data: activeForm } = useQuery({
+    queryKey: ["active-onboarding-form", currentOrg?.id],
+    queryFn: async () => {
+      const q = supabase.from("onboarding_forms").select("id, slug, title").eq("is_active", true).limit(1);
+      if (currentOrg?.id) q.eq("org_id", currentOrg.id);
+      const { data } = await q.maybeSingle();
+      return data;
+    },
+    enabled: !!currentOrg?.id,
   });
 
   // Fetch all resumes for this candidate
@@ -331,6 +362,61 @@ export default function CandidateDetail() {
                 candidateId={candidate.id}
                 candidateName={`${candidate.first_name} ${candidate.last_name}`}
               />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ClipboardCheck className="h-5 w-5 text-green-600" />
+                Candidate Onboarding
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {onboardingSubmission ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={
+                      onboardingSubmission.status === "approved" ? "default" :
+                      onboardingSubmission.status === "rejected" ? "destructive" :
+                      "secondary"
+                    }>
+                      {onboardingSubmission.status === "pending" ? "Form Submitted — Pending Review" :
+                       onboardingSubmission.status === "documents_under_review" ? "Under Review" :
+                       onboardingSubmission.status === "approved" ? "Approved" :
+                       "Rejected"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Submitted {new Date(onboardingSubmission.created_at).toLocaleDateString("en-IN")}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Share the onboarding form with this candidate after a hiring decision. They will fill in their personal details, government IDs, bank details, and upload KYC documents.
+                  </p>
+                  {activeForm ? (
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs bg-muted px-2 py-1 rounded flex-1 truncate">
+                        https://ats-6t2.pages.dev/join/{activeForm.slug}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`https://ats-6t2.pages.dev/join/${activeForm.slug}`);
+                          toast.success("Onboarding link copied");
+                        }}
+                      >
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copy Link
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-amber-600">No active onboarding form found. Create one in <strong>HR Onboarding</strong>.</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

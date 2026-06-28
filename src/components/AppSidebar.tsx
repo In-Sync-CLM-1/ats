@@ -27,7 +27,7 @@ import {
   CheckSquare,
   BarChart3,
   ListTodo,
-  
+  ClipboardCheck,
   Settings,
   Package,
   Package2,
@@ -78,6 +78,7 @@ const navigationSections: NavigationSection[] = [
     items: [
       { title: "Mandates", url: "/mandates", icon: Briefcase },
       { title: "Candidates", url: "/candidates", icon: Contact },
+      { title: "HR Onboarding", url: "/hr-onboarding", icon: ClipboardCheck },
     ],
   },
   {
