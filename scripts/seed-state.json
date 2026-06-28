@@ -1,0 +1,25 @@
+{
+  "orgId": "00000000-0000-0000-0000-000000000001",
+  "adminProfileId": "f1b2411a-8336-47f1-a51d-9c8434516bc0",
+  "referralCode": "41bec8e0",
+  "clientId": "4d58196b-36db-427d-a1e3-36038bc25a9a",
+  "mandateId": "1b458cbd-1ce1-4dcd-9ee2-60b4c2e8411e",
+  "candidateId": "f68704c9-10ac-40f4-959c-c90a94837667",
+  "formId": "c98195fb-1578-4aeb-be15-29b91bc5ce9a",
+  "formSlug": "onboard-insync-2026",
+  "recruiterIds": [
+    {
+      "id": "3781f7c3-c9cc-4eb1-8b0f-0dce2a784bba",
+      "name": "Aarav Mehta"
+    },
+    {
+      "id": "9a639ac9-5d9b-4e2b-84a6-5aad5d9519bf",
+      "name": "Neha Kapoor"
+    },
+    {
+      "id": "ba32099c-e762-40cd-8731-eb3729f4b7f6",
+      "name": "Divya Rao"
+    }
+  ],
+  "seededAt": "2026-06-28T18:30:25.739Z"
+}
