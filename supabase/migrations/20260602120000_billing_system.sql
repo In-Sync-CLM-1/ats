@@ -3,7 +3,7 @@
 -- Standardizes ats onto the single-org tenancy model + adds wallet/subscription
 -- /Razorpay/offline billing with lock cascade. ats is greenfield (no live tenants).
 -- ============================================================================
--- PART A — organizations billing columns + internal-org exemption switch
+-- PART A - organizations billing columns + internal-org exemption switch
 -- ============================================================================
 ALTER TABLE public.organizations
   ADD COLUMN IF NOT EXISTS is_internal boolean NOT NULL DEFAULT false,
@@ -13,7 +13,7 @@ ALTER TABLE public.organizations
 -- ============================================================================
 
 -- ============================================================================
--- PART B — billing tables, indexes, FKs, RLS enable (from globalcrm)
+-- PART B - billing tables, indexes, FKs, RLS enable (from globalcrm)
 -- ============================================================================
 --
 --
@@ -750,7 +750,7 @@ ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
 --
 
 \unrestrict 24N2FKh1r3OIQRBZt8WsDfoFB6taGva4UhdRq70yaQDzk6w64N2ORAI4nZDfJLK
--- PART C — enforcement functions (adapted from globalcrm reference)
+-- PART C - enforcement functions (adapted from globalcrm reference)
 -- ats keeps its own user_roles-based is_platform_admin(); not redefined here.
 -- get_user_org_id reads profiles.org_id (single-org model, matching globalcrm).
 -- ============================================================================
@@ -773,7 +773,7 @@ AS $function$
   )
 $function$;
 
--- Single-org accessor — returns NULL when the org is locked (the lock cascade),
+-- Single-org accessor - returns NULL when the org is locked (the lock cascade),
 -- unless the caller is a platform admin.
 CREATE OR REPLACE FUNCTION public.get_user_org_id(_user_id uuid)
  RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public'
@@ -924,7 +924,7 @@ END;
 $function$;
 
 -- ============================================================================
--- PART D — make ats's existing membership checks lock-aware, so the billing
+-- PART D - make ats's existing membership checks lock-aware, so the billing
 -- lock cascades through every existing tenant-table policy. Logic preserved
 -- exactly; only "AND NOT is_org_locked(org)" added. Platform admins bypass.
 -- ============================================================================
@@ -955,7 +955,7 @@ $function$;
 -- ============================================================================
 
 -- ============================================================================
--- PART B(2) — RLS policies on billing tables (reference get_user_org_id*)
+-- PART B(2) - RLS policies on billing tables (reference get_user_org_id*)
 -- ============================================================================
 CREATE POLICY "Admins can view org usage" ON public.service_usage_logs FOR SELECT USING (((org_id = public.get_user_org_id(auth.uid())) AND (public.has_role(auth.uid(), 'admin'::public.app_role) OR public.has_role(auth.uid(), 'super_admin'::public.app_role))));
 CREATE POLICY "Everyone can view active pricing" ON public.subscription_pricing FOR SELECT USING (true);
@@ -982,7 +982,7 @@ CREATE POLICY "Users can view their org transactions" ON public.payment_transact
 CREATE POLICY "Users can view their org wallet transactions" ON public.wallet_transactions FOR SELECT USING ((org_id = public.get_user_org_id(auth.uid())));
 CREATE POLICY "Users can view their own usage" ON public.service_usage_logs FOR SELECT USING ((user_id = auth.uid()));
 
--- PART E — seed the single active pricing row (globalcrm defaults; edit later)
+-- PART E - seed the single active pricing row (globalcrm defaults; edit later)
 -- ============================================================================
 INSERT INTO public.subscription_pricing (
   one_time_setup_cost, per_user_monthly_cost, min_wallet_balance,
@@ -993,7 +993,7 @@ SELECT 2000, 799, 500, 1, 0.20, 3, 0, 5000, 18, true
 WHERE NOT EXISTS (SELECT 1 FROM public.subscription_pricing WHERE is_active = true);
 
 -- ============================================================================
--- PART F — existing org(s) are the team's own / demo: exempt from billing.
+-- PART F - existing org(s) are the team's own / demo: exempt from billing.
 -- (ats is greenfield; this protects the bootstrap org from ever locking.)
 -- ============================================================================
 UPDATE public.organizations SET is_internal = true WHERE is_internal = false

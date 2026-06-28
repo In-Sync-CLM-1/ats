@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS public.onboarding_submissions (
 
 ALTER TABLE public.onboarding_submissions ENABLE ROW LEVEL SECURITY;
 
--- Public (unauthenticated) inserts allowed — this is filled from the public form
+-- Public (unauthenticated) inserts allowed - this is filled from the public form
 CREATE POLICY "Anyone can submit onboarding forms"
   ON public.onboarding_submissions FOR INSERT WITH CHECK (true);
 
