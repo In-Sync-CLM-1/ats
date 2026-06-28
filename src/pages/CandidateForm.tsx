@@ -424,7 +424,7 @@ export default function CandidateForm() {
                         <SelectContent>
                           <SelectItem value="sourcing_new_lead">Sourcing - New Lead</SelectItem>
                           <SelectItem value="sourcing_initial_screening_call">Sourcing - Initial Screening Call</SelectItem>
-                          <SelectItem value="bluspring_assessment_screening_cleared">ATS Assessment - Screening Cleared</SelectItem>
+                          <SelectItem value="ats_assessment_screening_cleared">ATS Assessment - Screening Cleared</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

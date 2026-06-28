@@ -199,7 +199,6 @@ const pricingPlans = [
 const trustLogos = [
   { src: "/uhc-logo.png", alt: "UHC" },
   { src: "/rmpl-logo.png", alt: "RMPL" },
-  { src: "/bluspring-logo.png", alt: "BluSpring" },
 ];
 
 /* ── animation helpers ────────────────────────────────── */

@@ -17,7 +17,7 @@ export function RecruiterQRCode({ referralCode: initialCode }: RecruiterQRCodePr
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
   // Use production domain for the application URL
-  const productionDomain = "https://bluspring.in-sync.co.in";
+  const productionDomain = "https://ats-6t2.pages.dev";
   const applicationUrl = referralCode 
     ? `${productionDomain}/apply/${referralCode}`
     : "";

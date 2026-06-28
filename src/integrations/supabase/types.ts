@@ -135,8 +135,11 @@ export type Database = {
       }
       call_logs: {
         Row: {
+          analysis_json: Json | null
+          analysis_quality_score: number | null
+          bolna_execution_id: string | null
           call_method: string | null
-          call_sid: string
+          call_sid: string | null
           candidate_id: string | null
           conversation_duration: number | null
           created_at: string
@@ -156,11 +159,15 @@ export type Database = {
           status: string
           subdisposition: string | null
           to_number: string
+          transcript: string | null
           updated_at: string
         }
         Insert: {
+          analysis_json?: Json | null
+          analysis_quality_score?: number | null
+          bolna_execution_id?: string | null
           call_method?: string | null
-          call_sid: string
+          call_sid?: string | null
           candidate_id?: string | null
           conversation_duration?: number | null
           created_at?: string
@@ -180,11 +187,15 @@ export type Database = {
           status?: string
           subdisposition?: string | null
           to_number: string
+          transcript?: string | null
           updated_at?: string
         }
         Update: {
+          analysis_json?: Json | null
+          analysis_quality_score?: number | null
+          bolna_execution_id?: string | null
           call_method?: string | null
-          call_sid?: string
+          call_sid?: string | null
           candidate_id?: string | null
           conversation_duration?: number | null
           created_at?: string
@@ -204,6 +215,7 @@ export type Database = {
           status?: string
           subdisposition?: string | null
           to_number?: string
+          transcript?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -283,6 +295,57 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_ai_scores: {
+        Row: {
+          breakdown: Json
+          candidate_id: string
+          category: string
+          id: string
+          input_hash: string | null
+          org_id: string | null
+          reasoning: string | null
+          score: number
+          scored_at: string
+        }
+        Insert: {
+          breakdown?: Json
+          candidate_id: string
+          category: string
+          id?: string
+          input_hash?: string | null
+          org_id?: string | null
+          reasoning?: string | null
+          score: number
+          scored_at?: string
+        }
+        Update: {
+          breakdown?: Json
+          candidate_id?: string
+          category?: string
+          id?: string
+          input_hash?: string | null
+          org_id?: string | null
+          reasoning?: string | null
+          score?: number
+          scored_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_ai_scores_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: true
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_ai_scores_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

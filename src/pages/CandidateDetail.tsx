@@ -2,6 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CallHistory } from "@/components/CallHistory";
+import { CandidateScoreCard } from "@/components/CandidateScoreCard";
+import { AIScreeningButton } from "@/components/AIScreeningButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -97,10 +99,11 @@ export default function CandidateDetail() {
       </div>
 
       <Tabs defaultValue="details">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-xl grid-cols-4">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="history">Call History</TabsTrigger>
           <TabsTrigger value="resume">Resume</TabsTrigger>
+          <TabsTrigger value="ai">AI Insights</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4 mt-4">
@@ -210,6 +213,24 @@ export default function CandidateDetail() {
 
         <TabsContent value="history" className="mt-4">
           <CallHistory candidateId={candidate.id} showFilters={false} />
+        </TabsContent>
+
+        <TabsContent value="ai" className="mt-4 space-y-4">
+          <CandidateScoreCard candidateId={candidate.id} />
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">AI Voice Screening</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Initiate an AI-powered outbound screening call via Bolna. The AI agent will ask qualifying questions and the result will appear in Call History.
+              </p>
+              <AIScreeningButton
+                candidateId={candidate.id}
+                candidateName={`${candidate.first_name} ${candidate.last_name}`}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="resume" className="mt-4">

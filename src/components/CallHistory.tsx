@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Phone, PlayCircle, Search, FileText, Plus, Edit2 } from "lucide-react";
+import { Phone, PlayCircle, Search, FileText, Plus, Edit2, BrainCircuit, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { CallDispositionDialog } from "./CallDispositionDialog";
 
 interface CallHistoryProps {
@@ -25,8 +26,12 @@ interface CallLog {
   from_number: string;
   to_number: string;
   status: string;
+  call_method: string | null;
   conversation_duration: number;
   recording_url: string | null;
+  transcript: string | null;
+  analysis_json: Record<string, any> | null;
+  analysis_quality_score: number | null;
   start_time: string | null;
   end_time: string | null;
   created_at: string;
@@ -73,10 +78,13 @@ const formatDuration = (seconds: number) => {
 };
 
 export function CallHistory({ candidateId, limit = 50, showFilters = true }: CallHistoryProps) {
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [dispositionDialogOpen, setDispositionDialogOpen] = useState(false);
   const [selectedCallLog, setSelectedCallLog] = useState<CallLog | null>(null);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [expandedAnalysis, setExpandedAnalysis] = useState<string | null>(null);
 
   const { data: callLogs, isLoading, refetch } = useQuery({
     queryKey: ['call-logs', candidateId, statusFilter, searchQuery],
@@ -121,6 +129,24 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
     },
   });
 
+  const analyzeRecording = async (callLogId: string) => {
+    setAnalyzingId(callLogId);
+    try {
+      const resp = await supabase.functions.invoke("analyze-call-recording", {
+        body: { call_log_id: callLogId },
+      });
+      if (resp.error) throw resp.error;
+      if (resp.data?.error) throw new Error(resp.data.error);
+      await refetch();
+      setExpandedAnalysis(callLogId);
+      toast.success("Call analysis complete");
+    } catch (err: any) {
+      toast.error(err.message || "Analysis failed");
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
   // Real-time subscription for call logs
   useEffect(() => {
     const channel = supabase
@@ -131,10 +157,9 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
           event: '*',
           schema: 'public',
           table: 'call_logs',
-          ...(candidateId && { filter: `demandcom_id=eq.${candidateId}` }),
+          ...(candidateId && { filter: `candidate_id=eq.${candidateId}` }),
         },
         () => {
-          console.log('Call log updated, refetching...');
           refetch();
         }
       )
@@ -201,7 +226,7 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
                 <TableHead>Duration</TableHead>
                 <TableHead>Disposition</TableHead>
                 <TableHead>Initiated By</TableHead>
-                <TableHead>Recording</TableHead>
+                <TableHead>Recording / AI</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -254,17 +279,62 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
                     {log.initiated_by_profile?.full_name || log.initiated_by_profile?.email || '-'}
                   </TableCell>
                   <TableCell>
-                    {log.recording_url ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.open(log.recording_url!, '_blank')}
-                      >
-                        <PlayCircle className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1">
+                        {log.recording_url ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(log.recording_url!, '_blank')}
+                            title="Play recording"
+                          >
+                            <PlayCircle className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                        {(log.recording_url || log.transcript) && !log.analysis_json && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={analyzingId === log.id}
+                            onClick={() => analyzeRecording(log.id)}
+                            title="Analyse with AI"
+                          >
+                            {analyzingId === log.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <BrainCircuit className="h-4 w-4 text-purple-500" />
+                            }
+                          </Button>
+                        )}
+                        {log.analysis_json && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedAnalysis(expandedAnalysis === log.id ? null : log.id)}
+                            title="View AI analysis"
+                          >
+                            <BrainCircuit className="h-4 w-4 text-green-600" />
+                          </Button>
+                        )}
+                      </div>
+                      {expandedAnalysis === log.id && log.analysis_json && (
+                        <div className="text-xs bg-muted/60 rounded p-2 space-y-1 max-w-xs">
+                          {log.analysis_json.summary && (
+                            <p className="text-muted-foreground italic">{log.analysis_json.summary}</p>
+                          )}
+                          {log.analysis_json.next_step && (
+                            <p><span className="font-medium">Next:</span> {log.analysis_json.next_step}</p>
+                          )}
+                          {log.analysis_json.interest_level && (
+                            <p><span className="font-medium">Interest:</span> {log.analysis_json.interest_level}</p>
+                          )}
+                          {log.analysis_quality_score != null && (
+                            <p><span className="font-medium">Quality:</span> {log.analysis_quality_score}/100</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {log.disposition ? (
