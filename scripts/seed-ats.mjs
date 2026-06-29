@@ -138,7 +138,8 @@ const existingMandates = await get(`mandates?job_title=eq.Senior+Frontend+Develo
 let mandateId;
 if (existingMandates?.length > 0) {
   mandateId = existingMandates[0].id;
-  console.log(`  existing: ${mandateId}`);
+  await patch(`mandates?id=eq.${mandateId}`, { assigned_recruiter_id: AARAV_ID });
+  console.log(`  existing: ${mandateId} — recruiter refreshed`);
 } else {
   const r = await post('mandates', {
     job_title: 'Senior Frontend Developer', client_id: clientId,
@@ -340,7 +341,34 @@ if (existingSubs?.length) {
   });
 }
 
-// ── 12. Referral code — from org admin's profile ──────────────────────────────
+// ── 12. mandate_candidates — link candidates to mandate for pipeline chart ──────
+console.log('\nUpserting mandate_candidates...');
+// Map interview_stage values to mandate_candidates current_stage values
+const stageMap = {
+  'Screening': 'shortlisted', 'Interview': 'interview',
+  'Offer': 'offer', 'Selected': 'selected', 'Rejected': 'rejected',
+};
+// Include Priya + all recruiter candidates for the demo mandate
+const allCandidates = await get(`candidates?org_id=eq.${ORG_ID}&select=id,interview_stage,assigned_recruiter&limit=50`);
+let mcCount = 0;
+for (const cand of (allCandidates || [])) {
+  const stage = stageMap[cand.interview_stage] || 'shortlisted';
+  const status = cand.interview_stage === 'Rejected' ? 'inactive' : 'active';
+  const existing = await get(`mandate_candidates?mandate_id=eq.${mandateId}&candidate_id=eq.${cand.id}&select=id`);
+  if (!existing?.length) {
+    try {
+      await post('mandate_candidates', {
+        mandate_id: mandateId, candidate_id: cand.id,
+        current_stage: stage, status,
+        created_by: cand.assigned_recruiter || ORG_ADMIN_ID,
+      });
+      mcCount++;
+    } catch (e) { console.warn(`  mandate_candidates skip: ${e.message.split('\n')[0]}`); }
+  }
+}
+console.log(`  linked ${mcCount} candidates to mandate`);
+
+// ── 13. Referral code — from org admin's profile ──────────────────────────────
 const orgAdminProfile = await get(`profiles?id=eq.${ORG_ADMIN_ID}&select=referral_code`);
 const referralCode = orgAdminProfile?.[0]?.referral_code
   || (await get(`profiles?id=eq.${AARAV_ID}&select=referral_code`))?.[0]?.referral_code

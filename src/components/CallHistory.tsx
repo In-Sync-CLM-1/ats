@@ -21,7 +21,7 @@ interface CallHistoryProps {
 interface CallLog {
   id: string;
   call_sid: string;
-  candidate_id: string | null;
+  demandcom_id: string | null;
   initiated_by: string | null;
   from_number: string;
   to_number: string;
@@ -93,7 +93,7 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
         .from('call_logs')
         .select(`
           *,
-          candidate:candidate_id (
+          candidate:candidates!demandcom_id (
             first_name,
             last_name,
             phone
@@ -107,7 +107,7 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
         .limit(limit);
 
       if (candidateId) {
-        query = query.eq('candidate_id', candidateId);
+        query = query.eq('demandcom_id', candidateId);
       }
 
       if (statusFilter !== 'all') {
@@ -157,7 +157,7 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
           event: '*',
           schema: 'public',
           table: 'call_logs',
-          ...(candidateId && { filter: `candidate_id=eq.${candidateId}` }),
+          ...(candidateId && { filter: `demandcom_id=eq.${candidateId}` }),
         },
         () => {
           refetch();

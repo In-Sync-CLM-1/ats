@@ -39,8 +39,8 @@ interface Mandate {
   assigned_recruiter?: {
     full_name: string;
   } | null;
-  mandate_team_members?: Array<{
-    role_in_mandate: string;
+  project_team_members?: Array<{
+    role_in_project: string;
     user_profile?: {
       full_name: string;
     } | null;
@@ -61,7 +61,7 @@ export default function MandateDetail() {
         .select(`
           *,
           clients(company_name, contact_name),
-          mandate_team_members(role_in_mandate, user_id)
+          project_team_members(role_in_project, user_id)
         `)
         .eq('id', id)
         .single();
@@ -83,19 +83,19 @@ export default function MandateDetail() {
 
       // Fetch team member profiles separately
       let teamMembersWithProfiles: Array<{
-        role_in_mandate: string;
+        role_in_project: string;
         user_profile?: { full_name: string } | null;
       }> = [];
 
-      if (data.mandate_team_members && data.mandate_team_members.length > 0) {
-        const memberIds = data.mandate_team_members.map((m: any) => m.user_id);
+      if (data.project_team_members && data.project_team_members.length > 0) {
+        const memberIds = data.project_team_members.map((m: any) => m.user_id);
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, full_name')
           .in('id', memberIds);
 
-        teamMembersWithProfiles = data.mandate_team_members.map((member: any) => ({
-          role_in_mandate: member.role_in_mandate,
+        teamMembersWithProfiles = data.project_team_members.map((member: any) => ({
+          role_in_project: member.role_in_project,
           user_profile: profiles?.find(p => p.id === member.user_id) || null
         }));
       }
@@ -103,7 +103,7 @@ export default function MandateDetail() {
       return {
         ...data,
         assigned_recruiter: assignedRecruiter,
-        mandate_team_members: teamMembersWithProfiles
+        project_team_members: teamMembersWithProfiles
       } as Mandate;
     },
   });
@@ -275,14 +275,14 @@ export default function MandateDetail() {
               <p className="text-sm font-medium text-muted-foreground">Primary Recruiter</p>
               <p className="text-sm">{mandate.assigned_recruiter?.full_name || "Not assigned"}</p>
             </div>
-            {mandate.mandate_team_members && mandate.mandate_team_members.length > 0 && (
+            {mandate.project_team_members && mandate.project_team_members.length > 0 && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-2">Team Members</p>
                 <div className="space-y-2">
-                  {mandate.mandate_team_members.map((member, idx) => (
+                  {mandate.project_team_members.map((member, idx) => (
                     <div key={idx} className="flex items-center justify-between text-sm">
                       <span>{member.user_profile?.full_name || "Unknown"}</span>
-                      <Badge variant="outline">{member.role_in_mandate}</Badge>
+                      <Badge variant="outline">{member.role_in_project}</Badge>
                     </div>
                   ))}
                 </div>

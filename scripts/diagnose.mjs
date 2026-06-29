@@ -5,7 +5,7 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { loadEnv } from './lib/env.mjs';
-import { login, BASE, candidateUrl, applyUrl, joinUrl } from './lib/app.mjs';
+import { login, BASE, candidateUrl, mandateUrl, applyUrl, joinUrl } from './lib/app.mjs';
 import { readFileSync } from 'fs';
 
 const env = loadEnv(new URL('../.env', import.meta.url));
@@ -48,11 +48,26 @@ if (loginOk) {
     }
   };
 
-  await shot('01-dashboard', `${BASE}/dashboard`, 2000);
-  await shot('02-candidates', `${BASE}/dashboard/candidates`, 2000);
+  await shot('01-dashboard', `${BASE}/dashboard`, 3000);
+  await shot('02-candidates', `${BASE}/candidates`, 2000);
   await shot('03-candidate-view', candidateUrl(candidateId), 3000);
-  await shot('04-mandates', `${BASE}/dashboard/mandates`, 2000);
+  // Navigate to candidate page then click AI Insights tab
+  try {
+    await page.goto(candidateUrl(candidateId), { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+    await page.getByRole('tab', { name: /ai insights/i }).click();
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: join(outDir, '03b-candidate-ai-tab.png'), fullPage: false });
+    console.log('  [03b-candidate-ai-tab] clicked AI Insights tab');
+  } catch (e) {
+    console.log('  [03b-candidate-ai-tab] ERROR:', e.message.split('\n')[0]);
+    await page.screenshot({ path: join(outDir, '03b-candidate-ai-tab-err.png'), fullPage: false });
+  }
+  await shot('04-mandates', `${BASE}/mandates`, 2000);
+  await shot('04b-mandate-view', mandateUrl(STATE.mandateId), 2000);
   await shot('05-hr-onboarding', `${BASE}/hr-onboarding`, 2000);
+  await shot('05b-recruiter-perf', `${BASE}/recruiter-performance`, 2000);
+  await shot('05c-calling-dashboard', `${BASE}/calling-dashboard`, 2000);
 }
 
 // ── Guest: referral + join pages ────────────────────────────────────────────
