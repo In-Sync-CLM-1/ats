@@ -40,6 +40,8 @@ import OnboardingWizard from "./pages/OnboardingWizard";
 import HROnboarding from "./pages/HROnboarding";
 import CandidateOnboardingForm from "./pages/CandidateOnboardingForm";
 import LandingDemo from "./pages/LandingDemo";
+import CareersPage from "./pages/CareersPage";
+import MyDesk from "./pages/MyDesk";
 import PlatformAdminLayout from "./components/platform/PlatformAdminLayout";
 import PlatformAdminDashboard from "./pages/platform/PlatformAdminDashboard";
 import PlatformOrganizations from "./pages/platform/PlatformOrganizations";
@@ -67,6 +69,7 @@ const App = () => (
               <Route path="/landing" element={<LandingPage />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/apply/:referralCode" element={<PublicApply />} />
+              <Route path="/careers/:slug" element={<CareersPage />} />
               <Route path="/join/:slug" element={<CandidateOnboardingForm />} />
               <Route path="/landing-demo" element={<LandingDemo />} />
               <Route path="/create-org" element={<CreateOrg />} />
@@ -110,7 +113,8 @@ const App = () => (
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/whats-new" element={<WhatsNew />} />
 
-                <Route path="/hr-onboarding" element={<HROnboarding />} />
+                <Route path="/my-desk" element={<MyDesk />} />
+              <Route path="/hr-onboarding" element={<HROnboarding />} />
                 <Route path="/sites" element={<SitesAdmin />} />
                 <Route path="/headcount-agreements" element={<HeadcountAgreementsAdmin />} />
               </Route>

@@ -36,6 +36,7 @@ import {
   MapPin,
   ClipboardList,
   HelpCircle,
+  Inbox,
 } from "lucide-react";
 import { getRolePermissions, Permissions } from "@/lib/rolePermissions";
 import {
@@ -76,6 +77,7 @@ const navigationSections: NavigationSection[] = [
   {
     label: "OPERATIONS",
     items: [
+      { title: "My Desk", url: "/my-desk", icon: Inbox },
       { title: "Mandates", url: "/mandates", icon: Briefcase },
       { title: "Candidates", url: "/candidates", icon: Contact },
       { title: "HR Onboarding", url: "/hr-onboarding", icon: ClipboardCheck },

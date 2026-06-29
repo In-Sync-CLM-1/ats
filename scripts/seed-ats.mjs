@@ -165,7 +165,7 @@ let candidateId;
 if (existingPriya?.length > 0) {
   candidateId = existingPriya[0].id;
   await patch(`candidates?id=eq.${candidateId}`, {
-    interview_stage: 'Selected', current_status: 'applied', is_onboarded: false,
+    interview_stage: 'Interview', current_status: 'applied', is_onboarded: false,
     assigned_recruiter: AARAV_ID,
   });
   console.log(`  refreshed: ${candidateId}`);
@@ -175,7 +175,7 @@ if (existingPriya?.length > 0) {
     email: 'priya.sharma.demo@gmail.com', phone: '9876543210',
     designation: 'Frontend Developer',
     current_ctc_lakhs: 8.0, expected_ctc_lakhs: 12.0,
-    interview_stage: 'Selected', current_status: 'applied',
+    interview_stage: 'Interview', current_status: 'applied',
     source: 'Referral',
     location: 'Bangalore', city: 'Bangalore', state: 'Karnataka',
     org_id: ORG_ID, assigned_recruiter: AARAV_ID, created_by: ORG_ADMIN_ID, is_onboarded: false,
@@ -368,7 +368,63 @@ for (const cand of (allCandidates || [])) {
 }
 console.log(`  linked ${mcCount} candidates to mandate`);
 
-// ── 13. Referral code — from org admin's profile ──────────────────────────────
+// ── 13. Demo team (Talent Acquisition Alpha) ──────────────────────────────────
+console.log('\nUpserting demo team...');
+const existingTeam = await get(`teams?name=eq.Talent+Acquisition+Alpha&org_id=eq.${ORG_ID}&select=id`);
+let teamId;
+if (existingTeam?.length) {
+  teamId = existingTeam[0].id;
+  console.log(`  existing team: ${teamId}`);
+} else {
+  const r = await post('teams', {
+    name: 'Talent Acquisition Alpha', description: 'Core recruiting team for tech mandates',
+    team_lead_id: ORG_ADMIN_ID, is_active: true, org_id: ORG_ID, created_by: ORG_ADMIN_ID,
+  });
+  teamId = r[0].id;
+  console.log(`  created team: ${teamId}`);
+}
+// Add Siddharth, Aarav, Neha, Divya as team members
+for (const uid of [ORG_ADMIN_ID, ...recruiterIds.map(r => r.id)]) {
+  const role = uid === ORG_ADMIN_ID ? 'member' : 'member';
+  const existing = await get(`team_members?team_id=eq.${teamId}&user_id=eq.${uid}&select=id`);
+  if (!existing?.length) {
+    await post('team_members', { team_id: teamId, user_id: uid, role_in_team: role, is_active: true });
+  }
+}
+console.log(`  team members added`);
+
+// ── 14. Candidates assigned to Siddharth Roy (My Desk demo) ──────────────────
+console.log('\nUpserting My Desk candidates for Siddharth Roy...');
+const MY_DESK_NAMES = [
+  ['Arjun','Sethi','Tech Lead',10,16,'Interview', true],
+  ['Sunita','Menon','Product Manager',12,18,'Offer', false],
+  ['Ravi','Bose','Backend Developer',7,11,'Shortlisted', false],
+];
+for (const [fn, ln, desig, cur, exp, stage, callToday] of MY_DESK_NAMES) {
+  const email = `${fn.toLowerCase()}.${ln.toLowerCase()}.sid@ats-demo.in`;
+  const existing = await get(`candidates?email=eq.${encodeURIComponent(email)}&org_id=eq.${ORG_ID}&select=id`);
+  if (existing?.length) {
+    await patch(`candidates?id=eq.${existing[0].id}`, {
+      interview_stage: stage, assigned_recruiter: ORG_ADMIN_ID,
+      next_call_date: callToday ? new Date().toISOString().split('T')[0] : null,
+    });
+    console.log(`  refreshed ${fn} ${ln}`);
+  } else {
+    await post('candidates', {
+      first_name: fn, last_name: ln, email,
+      phone: `9870${String(phoneIdx++).padStart(6, '0')}`,
+      designation: desig, current_ctc_lakhs: cur, expected_ctc_lakhs: exp,
+      interview_stage: stage, current_status: 'applied',
+      source: 'LinkedIn', org_id: ORG_ID,
+      assigned_recruiter: ORG_ADMIN_ID, created_by: ORG_ADMIN_ID,
+      next_call_date: callToday ? new Date().toISOString().split('T')[0] : null,
+      position_applied_for: 'Senior Frontend Developer',
+    });
+    console.log(`  created ${fn} ${ln}`);
+  }
+}
+
+// ── 15. Referral code — from org admin's profile ──────────────────────────────
 const orgAdminProfile = await get(`profiles?id=eq.${ORG_ADMIN_ID}&select=referral_code`);
 const referralCode = orgAdminProfile?.[0]?.referral_code
   || (await get(`profiles?id=eq.${AARAV_ID}&select=referral_code`))?.[0]?.referral_code
