@@ -12,7 +12,7 @@ const env = loadEnv(new URL('../../.env', import.meta.url));
 const VP = { width: 1366, height: 768 };
 
 export const ACCT = {
-  admin: { email: env.ATS_ADMIN_EMAIL, password: env.ATS_ADMIN_PASSWORD },
+  admin: { email: env.ATS_ORG_ADMIN_EMAIL, password: env.ATS_ORG_ADMIN_PASSWORD },
   guest: { guest: true },
 };
 

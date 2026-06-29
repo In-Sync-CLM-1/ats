@@ -25,7 +25,7 @@ export async function login(page, email, password) {
   throw err;
 }
 
-export const candidateUrl = (id) => `${BASE}/dashboard/candidates/view/${id}`;
-export const mandateUrl = (id) => `${BASE}/dashboard/mandates/view/${id}`;
+export const candidateUrl = (id) => `${BASE}/candidates/view/${id}`;
+export const mandateUrl = (id) => `${BASE}/mandates/view/${id}`;
 export const applyUrl = (referralCode) => `${BASE}/apply/${referralCode}`;
 export const joinUrl = (slug) => `${BASE}/join/${slug}`;

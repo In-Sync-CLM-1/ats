@@ -36,7 +36,7 @@ export const SCENES = [
       const rStats = await ring(page, statsCard, { label: 'Live pipeline metrics' }).catch(() => null);
       await waitUntil(at('every candidate', 9, -0.2));
       if (rStats) await removeAnn(page, rStats);
-      await zoomTo(page, page.getByText('Total Candidates').first().catch(() => statsCard), 1.25, 900).catch(() => {});
+      await zoomTo(page, page.getByText('Total Candidates').first(), 1.25, 900).catch(() => {});
       await waitUntil(at('joining day', D - 1.5));
       await zoomReset(page);
       await removeCaption(page, cap);

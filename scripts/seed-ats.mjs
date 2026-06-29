@@ -1,9 +1,10 @@
 // Seed ATS demo state for the walkthrough video.
 // Run before every render (idempotent — upserts everything).
-// 1. Resets admin password to AtsAdmin#2026
-// 2. Creates 3 demo recruiter profiles
-// 3. Creates Priya Sharma's full journey: apply -> AI score -> Bolna call -> onboarding
-// 4. Creates supporting call/candidate activity so dashboards look populated
+// 1. Renames org to "In-sync demo"
+// 2. Creates org admin: Siddharth Roy (org_admin / admin)
+// 3. Creates 3 demo recruiter profiles (manager / member)
+// 4. Creates Priya Sharma's full journey: apply -> AI score -> Bolna call -> onboarding
+// 5. Creates supporting call/candidate activity so dashboards look populated
 // Writes seed-state.json with IDs scenes.mjs needs.
 import { createClient } from '@supabase/supabase-js';
 import { writeFileSync } from 'fs';
@@ -41,18 +42,42 @@ const upsert = (p, b, conflict) => fetch(`${SB_URL}/rest/v1/${p}${conflict ? `?o
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
-const ADMIN_ID = 'f1b2411a-8336-47f1-a51d-9c8434516bc0'; // a@in-sync.co.in / Amit Sengupta
-const ADMIN_EMAIL = 'a@in-sync.co.in';
 const DEMO_PASSWORD = 'AtsDemo#2026';
-const ADMIN_PASSWORD = 'AtsAdmin#2026';
 
-// ── 1. Reset admin password ───────────────────────────────────────────────────
-console.log('Setting admin password...');
-const { error: pwErr } = await sb.auth.admin.updateUserById(ADMIN_ID, { password: ADMIN_PASSWORD });
-if (pwErr) console.warn('  password update warning:', pwErr.message);
-else console.log(`  a@in-sync.co.in => ${ADMIN_PASSWORD}`);
+// ── 1. Rename org to "In-sync demo" ──────────────────────────────────────────
+console.log('Updating org name to "In-sync demo"...');
+await fetch(`${SB_URL}/rest/v1/organizations?id=eq.${ORG_ID}`, {
+  method: 'PATCH',
+  headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+  body: JSON.stringify({ name: 'In-sync demo', slug: 'in-sync-demo' }),
+});
+console.log('  done');
 
-// ── 2. Demo recruiter profiles ────────────────────────────────────────────────
+// ── 2. Org admin: Siddharth Roy ───────────────────────────────────────────────
+console.log('\nCreating org admin: Siddharth Roy...');
+const ORG_ADMIN_EMAIL = 'siddharth.roy@insync-demo.in';
+const { data: allUsers } = await sb.auth.admin.listUsers();
+const foundOrgAdmin = allUsers?.users?.find(u => u.email === ORG_ADMIN_EMAIL);
+let ORG_ADMIN_ID;
+if (foundOrgAdmin) {
+  ORG_ADMIN_ID = foundOrgAdmin.id;
+  await sb.auth.admin.updateUserById(ORG_ADMIN_ID, { password: DEMO_PASSWORD });
+  console.log(`  existing: ${ORG_ADMIN_ID} — password refreshed`);
+} else {
+  const { data: created, error: cErr } = await sb.auth.admin.createUser({
+    email: ORG_ADMIN_EMAIL, password: DEMO_PASSWORD, email_confirm: true,
+    user_metadata: { full_name: 'Siddharth Roy' },
+  });
+  if (cErr) throw new Error(`Create org admin: ${cErr.message}`);
+  ORG_ADMIN_ID = created.user.id;
+  console.log(`  created: ${ORG_ADMIN_ID}`);
+}
+await upsert('profiles', { id: ORG_ADMIN_ID, email: ORG_ADMIN_EMAIL, full_name: 'Siddharth Roy', onboarding_completed: true }, 'id');
+await upsert('org_memberships', { org_id: ORG_ID, user_id: ORG_ADMIN_ID, role: 'org_admin' }, 'org_id,user_id');
+await upsert('user_roles', { user_id: ORG_ADMIN_ID, role: 'admin', org_id: ORG_ID }, 'user_id,role');
+console.log(`  Siddharth Roy: org_admin + admin role`);
+
+// ── 3. Demo recruiter profiles ────────────────────────────────────────────────
 console.log('\nCreating demo recruiter profiles...');
 
 const RECRUITERS = [
@@ -63,9 +88,8 @@ const RECRUITERS = [
 
 const recruiterIds = [];
 for (const rec of RECRUITERS) {
-  // Check if auth user exists
-  const { data: existing } = await sb.auth.admin.listUsers();
-  const found = existing?.users?.find(u => u.email === rec.email);
+  const { data: existingU } = await sb.auth.admin.listUsers();
+  const found = existingU?.users?.find(u => u.email === rec.email);
   let uid;
   if (found) {
     uid = found.id;
@@ -82,17 +106,15 @@ for (const rec of RECRUITERS) {
   }
   recruiterIds.push({ ...rec, id: uid });
 
-  // Upsert profile
   await upsert('profiles', { id: uid, email: rec.email, full_name: rec.full_name, phone: rec.phone, onboarding_completed: true }, 'id');
-
-  // Upsert org membership
   await upsert('org_memberships', { org_id: ORG_ID, user_id: uid, role: 'member' }, 'org_id,user_id');
-
-  // Upsert user_role = manager
   await upsert('user_roles', { user_id: uid, role: 'manager', org_id: ORG_ID }, 'user_id,role');
 }
 
-// ── 3. Demo client ────────────────────────────────────────────────────────────
+// Aarav Mehta will be Priya's assigned recruiter
+const AARAV_ID = recruiterIds.find(r => r.full_name === 'Aarav Mehta')?.id || recruiterIds[0].id;
+
+// ── 4. Demo client ────────────────────────────────────────────────────────────
 console.log('\nUpserting demo client...');
 const existingClients = await get(`clients?company_name=eq.TechCorp+Solutions&org_id=eq.${ORG_ID}&select=id`);
 let clientId;
@@ -100,12 +122,17 @@ if (existingClients?.length > 0) {
   clientId = existingClients[0].id;
   console.log(`  existing: ${clientId}`);
 } else {
-  const r = await post('clients', { company_name: 'TechCorp Solutions', contact_name: 'Rohan Kapoor', contact_number: '9900112233', email_id: 'hiring@techcorp.in', industry_sector: 'Technology', head_office_location: 'Whitefield, Bangalore 560066', org_id: ORG_ID, created_by: ADMIN_ID });
+  const r = await post('clients', {
+    company_name: 'TechCorp Solutions', contact_name: 'Rohan Kapoor', contact_number: '9900112233',
+    email_id: 'hiring@techcorp.in', industry_sector: 'Technology',
+    head_office_location: 'Whitefield, Bangalore 560066',
+    org_id: ORG_ID, created_by: ORG_ADMIN_ID,
+  });
   clientId = r[0].id;
   console.log(`  created: ${clientId}`);
 }
 
-// ── 4. Demo mandate ───────────────────────────────────────────────────────────
+// ── 5. Demo mandate ───────────────────────────────────────────────────────────
 console.log('Upserting demo mandate...');
 const existingMandates = await get(`mandates?job_title=eq.Senior+Frontend+Developer&org_id=eq.${ORG_ID}&select=id`);
 let mandateId;
@@ -124,19 +151,22 @@ if (existingMandates?.length > 0) {
     priority_level: 'High', mandate_status: 'open',
     mandate_received_date: new Date().toISOString().split('T')[0],
     target_closure_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-    assigned_recruiter_id: ADMIN_ID, org_id: ORG_ID, created_by: ADMIN_ID,
+    assigned_recruiter_id: AARAV_ID, org_id: ORG_ID, created_by: ORG_ADMIN_ID,
   });
   mandateId = r[0].id;
   console.log(`  created: ${mandateId}`);
 }
 
-// ── 5. Priya Sharma (the demo candidate) ──────────────────────────────────────
+// ── 6. Priya Sharma (the demo candidate) ──────────────────────────────────────
 console.log('\nUpserting Priya Sharma...');
 const existingPriya = await get(`candidates?email=eq.priya.sharma.demo%40gmail.com&org_id=eq.${ORG_ID}&select=id`);
 let candidateId;
 if (existingPriya?.length > 0) {
   candidateId = existingPriya[0].id;
-  await patch(`candidates?id=eq.${candidateId}`, { interview_stage: 'Selected', current_status: 'applied', is_onboarded: false });
+  await patch(`candidates?id=eq.${candidateId}`, {
+    interview_stage: 'Selected', current_status: 'applied', is_onboarded: false,
+    assigned_recruiter: AARAV_ID,
+  });
   console.log(`  refreshed: ${candidateId}`);
 } else {
   const r = await post('candidates', {
@@ -147,13 +177,13 @@ if (existingPriya?.length > 0) {
     interview_stage: 'Selected', current_status: 'applied',
     source: 'Referral',
     location: 'Bangalore', city: 'Bangalore', state: 'Karnataka',
-    org_id: ORG_ID, assigned_recruiter: ADMIN_ID, created_by: ADMIN_ID, is_onboarded: false,
+    org_id: ORG_ID, assigned_recruiter: AARAV_ID, created_by: ORG_ADMIN_ID, is_onboarded: false,
   });
   candidateId = r[0].id;
   console.log(`  created: ${candidateId}`);
 }
 
-// ── 6. AI score for Priya ─────────────────────────────────────────────────────
+// ── 7. AI score for Priya ─────────────────────────────────────────────────────
 console.log('Upserting AI score...');
 await upsert('candidate_ai_scores', {
   candidate_id: candidateId, org_id: ORG_ID, score: 61, category: 'promising',
@@ -162,7 +192,7 @@ await upsert('candidate_ai_scores', {
   scored_at: new Date().toISOString(),
 }, 'candidate_id');
 
-// ── 7. Bolna call log for Priya ───────────────────────────────────────────────
+// ── 8. Bolna call log for Priya ───────────────────────────────────────────────
 console.log('Upserting Bolna call log...');
 const existingCalls = await get(`call_logs?demandcom_id=eq.${candidateId}&call_method=eq.bolna&select=id`);
 const callAnalysis = {
@@ -189,12 +219,21 @@ const callNow = new Date();
 const callStart = new Date(callNow.getTime() - 2 * 3600000);
 const callEnd = new Date(callStart.getTime() + 305000);
 if (existingCalls?.length) {
-  await patch(`call_logs?id=eq.${existingCalls[0].id}`, { status: 'completed', conversation_duration: 305, transcript, analysis_json: callAnalysis, analysis_quality_score: 82, start_time: callStart.toISOString(), end_time: callEnd.toISOString() });
+  await patch(`call_logs?id=eq.${existingCalls[0].id}`, {
+    status: 'completed', conversation_duration: 305, transcript, analysis_json: callAnalysis,
+    analysis_quality_score: 82, start_time: callStart.toISOString(), end_time: callEnd.toISOString(),
+  });
 } else {
-  await post('call_logs', { demandcom_id: candidateId, org_id: ORG_ID, from_number: 'bolna-ai', to_number: '9876543210', status: 'completed', direction: 'outbound-api', call_method: 'bolna', bolna_execution_id: `demo-exec-${candidateId.slice(0,8)}`, conversation_duration: 305, transcript, analysis_json: callAnalysis, analysis_quality_score: 82, start_time: callStart.toISOString(), end_time: callEnd.toISOString(), initiated_by: ADMIN_ID });
+  await post('call_logs', {
+    demandcom_id: candidateId, org_id: ORG_ID, from_number: 'bolna-ai', to_number: '9876543210',
+    status: 'completed', direction: 'outbound-api', call_method: 'bolna',
+    bolna_execution_id: `demo-exec-${candidateId.slice(0,8)}`,
+    conversation_duration: 305, transcript, analysis_json: callAnalysis, analysis_quality_score: 82,
+    start_time: callStart.toISOString(), end_time: callEnd.toISOString(), initiated_by: AARAV_ID,
+  });
 }
 
-// ── 8. Supporting candidate activity for each demo recruiter ──────────────────
+// ── 9. Supporting candidate activity for each demo recruiter ──────────────────
 console.log('\nCreating recruiter activity...');
 const STAGES = ['Screening', 'Interview', 'Offer', 'Selected', 'Rejected'];
 const NAMES = [
@@ -234,7 +273,6 @@ for (const recruiter of recruiterIds) {
       cid = r[0].id;
     }
 
-    // 2-3 call logs per candidate
     const calls = Math.min(callCount, 3);
     for (let c = 0; c < calls; c++) {
       const st = new Date(now.getTime() - (i * 2 + c) * 86400000 - 3600000);
@@ -255,7 +293,7 @@ for (const recruiter of recruiterIds) {
   console.log(`  ${recruiter.full_name}: ${count} candidates, ${callCount} calls`);
 }
 
-// ── 9. Onboarding form ────────────────────────────────────────────────────────
+// ── 10. Onboarding form ────────────────────────────────────────────────────────
 console.log('\nUpserting onboarding form...');
 const existingForms = await get(`onboarding_forms?org_id=eq.${ORG_ID}&is_active=eq.true&select=id,slug`);
 let formId, formSlug;
@@ -264,17 +302,27 @@ if (existingForms?.length) {
   console.log(`  existing: ${formId} slug=${formSlug}`);
 } else {
   formSlug = `onboard-insync-2026`;
-  const r = await post('onboarding_forms', { org_id: ORG_ID, title: 'New Hire Onboarding', description: 'Please fill in your details and upload the required documents to complete your onboarding.', slug: formSlug, is_active: true, created_by: ADMIN_ID });
+  const r = await post('onboarding_forms', {
+    org_id: ORG_ID, title: 'New Hire Onboarding',
+    description: 'Please fill in your details and upload the required documents to complete your onboarding.',
+    slug: formSlug, is_active: true, created_by: ORG_ADMIN_ID,
+  });
   formId = r[0].id;
   console.log(`  created: ${formId} slug=${formSlug}`);
 }
 
-// ── 10. Onboarding submission for Priya ───────────────────────────────────────
+// ── 11. Onboarding submission for Priya ───────────────────────────────────────
 console.log('Upserting onboarding submission...');
-const aiReview = { risk_score: 12, recommendation: 'Approve', findings: ['PAN format valid (ABCPS1234F)', 'Aadhaar format valid (12 digits)', 'IFSC HDFC0001234 is valid', 'Bank account complete', 'No fraud signals detected'], summary: 'All documents appear complete and valid. Identity details internally consistent. Recommend approval.' };
+const aiReview = {
+  risk_score: 12, recommendation: 'Approve',
+  findings: ['PAN format valid (ABCPS1234F)', 'Aadhaar format valid (12 digits)', 'IFSC HDFC0001234 is valid', 'Bank account complete', 'No fraud signals detected'],
+  summary: 'All documents appear complete and valid. Identity details internally consistent. Recommend approval.',
+};
 const existingSubs = await get(`onboarding_submissions?candidate_id=eq.${candidateId}&select=id`);
 if (existingSubs?.length) {
-  await patch(`onboarding_submissions?id=eq.${existingSubs[0].id}`, { status: 'documents_under_review', ai_review_result: aiReview, ai_review_at: new Date().toISOString() });
+  await patch(`onboarding_submissions?id=eq.${existingSubs[0].id}`, {
+    status: 'documents_under_review', ai_review_result: aiReview, ai_review_at: new Date().toISOString(),
+  });
 } else {
   await post('onboarding_submissions', {
     form_id: formId, org_id: ORG_ID, candidate_id: candidateId,
@@ -292,12 +340,20 @@ if (existingSubs?.length) {
   });
 }
 
-// ── 11. Referral code ─────────────────────────────────────────────────────────
-const profiles = await get(`profiles?id=eq.${ADMIN_ID}&select=referral_code`);
-const referralCode = profiles?.[0]?.referral_code || '41bec8e0';
+// ── 12. Referral code — from org admin's profile ──────────────────────────────
+const orgAdminProfile = await get(`profiles?id=eq.${ORG_ADMIN_ID}&select=referral_code`);
+const referralCode = orgAdminProfile?.[0]?.referral_code
+  || (await get(`profiles?id=eq.${AARAV_ID}&select=referral_code`))?.[0]?.referral_code
+  || '41bec8e0';
 
 // ── Write seed-state.json ─────────────────────────────────────────────────────
-const state = { orgId: ORG_ID, adminProfileId: ADMIN_ID, referralCode, clientId, mandateId, candidateId, formId, formSlug, recruiterIds: recruiterIds.map(r => ({ id: r.id, name: r.full_name })), seededAt: new Date().toISOString() };
+const state = {
+  orgId: ORG_ID, orgAdminId: ORG_ADMIN_ID,
+  referralCode, clientId, mandateId, candidateId, formId, formSlug,
+  recruiterIds: recruiterIds.map(r => ({ id: r.id, name: r.full_name })),
+  seededAt: new Date().toISOString(),
+};
 writeFileSync(join(here, 'seed-state.json'), JSON.stringify(state, null, 2));
 console.log('\nSeed complete. seed-state.json written.');
+console.log(`  orgAdmin: siddharth.roy@insync-demo.in (${ORG_ADMIN_ID})`);
 console.log(`  referralCode: ${referralCode}  candidate: ${candidateId}  form: ${formSlug}`);
