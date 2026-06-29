@@ -72,7 +72,7 @@ if (foundOrgAdmin) {
   ORG_ADMIN_ID = created.user.id;
   console.log(`  created: ${ORG_ADMIN_ID}`);
 }
-await upsert('profiles', { id: ORG_ADMIN_ID, email: ORG_ADMIN_EMAIL, full_name: 'Siddharth Roy', onboarding_completed: true }, 'id');
+await upsert('profiles', { id: ORG_ADMIN_ID, email: ORG_ADMIN_EMAIL, full_name: 'Siddharth Roy', onboarding_completed: true, org_id: ORG_ID }, 'id');
 await upsert('org_memberships', { org_id: ORG_ID, user_id: ORG_ADMIN_ID, role: 'org_admin' }, 'org_id,user_id');
 await upsert('user_roles', { user_id: ORG_ADMIN_ID, role: 'admin', org_id: ORG_ID }, 'user_id,role');
 console.log(`  Siddharth Roy: org_admin + admin role`);
@@ -106,7 +106,7 @@ for (const rec of RECRUITERS) {
   }
   recruiterIds.push({ ...rec, id: uid });
 
-  await upsert('profiles', { id: uid, email: rec.email, full_name: rec.full_name, phone: rec.phone, onboarding_completed: true }, 'id');
+  await upsert('profiles', { id: uid, email: rec.email, full_name: rec.full_name, phone: rec.phone, onboarding_completed: true, org_id: ORG_ID }, 'id');
   await upsert('org_memberships', { org_id: ORG_ID, user_id: uid, role: 'member' }, 'org_id,user_id');
   await upsert('user_roles', { user_id: uid, role: 'manager', org_id: ORG_ID }, 'user_id,role');
 }
