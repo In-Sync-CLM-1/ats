@@ -352,11 +352,11 @@ export default function CandidateDetail() {
           <CandidateScoreCard candidateId={candidate.id} />
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">AI Voice Screening</CardTitle>
+              <CardTitle className="text-lg">AI Voice Calls</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Initiate an AI-powered outbound screening call via Bolna. The AI agent will ask qualifying questions and the result will appear in Call History.
+                Hand the repetitive calls to the AI voice agent — interview reminders, availability confirmations, and offer follow-ups. It calls, confirms, and logs every outcome to Call History automatically, so recruiters keep their time for the conversations that matter.
               </p>
               <AIScreeningButton
                 candidateId={candidate.id}

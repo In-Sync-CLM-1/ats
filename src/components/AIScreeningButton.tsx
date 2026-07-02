@@ -29,11 +29,11 @@ export function AIScreeningButton({ candidateId, candidateName, onCallStarted }:
 
       setExecutionId(data.execution_id);
       setState("completed");
-      toast.success(`AI screening call initiated to ${candidateName}`);
+      toast.success(`AI call initiated to ${candidateName}`);
       if (onCallStarted && data.call_log_id) onCallStarted(data.call_log_id);
     } catch (err: any) {
       setState("failed");
-      toast.error(err.message || "Failed to start AI screening call");
+      toast.error(err.message || "Failed to start AI call");
     }
   };
 
@@ -46,7 +46,7 @@ export function AIScreeningButton({ candidateId, candidateName, onCallStarted }:
     return (
       <Button variant="outline" className="gap-2 border-purple-300 text-purple-700 hover:bg-purple-50" onClick={startScreening}>
         <Bot className="h-4 w-4" />
-        Screen with AI
+        Start AI Call
       </Button>
     );
   }
