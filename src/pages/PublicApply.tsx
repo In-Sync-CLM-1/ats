@@ -360,68 +360,46 @@ export default function PublicApply() {
         console.error("Parse error:", parseError);
       }
 
-      // Insert application for each selected mandate (or one general application)
-      const applicationInserts = selectedMandates.length > 0
-        ? selectedMandates.map(mandateId => ({
-            referral_code: referralCode,
-            recruiter_id: recruiter.id,
-            mandate_id: mandateId,
-            resume_url: publicUrl,
-            resume_file_name: file.name,
-            parsed_data: parseResult?.data || {},
-            status: "pending",
-          }))
-        : [{
-            referral_code: referralCode,
-            recruiter_id: recruiter.id,
-            mandate_id: null,
-            resume_url: publicUrl,
-            resume_file_name: file.name,
-            parsed_data: parseResult?.data || {},
-            status: "pending",
-          }];
-
-      const { error: applicationError } = await supabase.from("public_job_applications").insert(applicationInserts);
-
-      if (applicationError) throw applicationError;
-
       const parsedData = parseResult?.data || {};
       setParsedResumeData(parsedData);
 
-      // Create candidate immediately
-      const { data: candidateData, error: candidateError } = await supabase.from("candidates").insert({
-        first_name: parsedData.first_name || "Unknown",
-        last_name: parsedData.last_name || "Candidate",
-        email: parsedData.email || null,
-        phone: parsedData.phone || null,
-        position_applied_for: selectedMandates.length > 0
-          ? mandates.filter((m) => selectedMandates.includes(m.id)).map(m => m.job_title).join(', ') || "General Application"
-          : "General Application",
-        current_status: "applied",
-        resume_url: publicUrl,
-        source: "referral",
-        source_recruiter_id: recruiter.id,
-        created_by: recruiter.id,
-        assigned_recruiter: recruiter.id,
-        assigned_at: new Date().toISOString(),
-        is_fresh_application: true,
-        application_submitted_at: new Date().toISOString(),
-        current_location: parsedData.current_location || null,
-        current_company: parsedData.current_company || null,
-        designation: parsedData.designation || null,
-        total_experience_years: parsedData.total_experience_years || null,
-        current_ctc_lakhs: parsedData.current_ctc_lakhs || null,
-        expected_ctc_lakhs: parsedData.expected_ctc_lakhs || null,
-        key_skills: parsedData.key_skills || null,
-        highest_qualification: parsedData.highest_qualification || null,
-      }).select('id').single();
+      const positionApplied = selectedMandates.length > 0
+        ? mandates.filter((m) => selectedMandates.includes(m.id)).map(m => m.job_title).join(', ') || "General Application"
+        : "General Application";
 
-      if (candidateError) {
-        console.error("Candidate creation error:", candidateError);
-        throw candidateError;
+      // Create the candidate + application(s) server-side. A SECURITY DEFINER RPC does
+      // this atomically: it validates the referral code, sets org_id from the recruiter
+      // (so the candidate is visible to the org), links the application to the candidate,
+      // and returns the new id — without anon needing table INSERT/SELECT policies.
+      const { data: newCandidateId, error: submitError } = await supabase.rpc("submit_public_application", {
+        p_referral_code: referralCode,
+        p_candidate: {
+          first_name: parsedData.first_name || "Unknown",
+          last_name: parsedData.last_name || "Candidate",
+          email: parsedData.email || null,
+          phone: parsedData.phone || null,
+          position_applied_for: positionApplied,
+          current_location: parsedData.current_location || null,
+          current_company: parsedData.current_company || null,
+          designation: parsedData.designation || null,
+          total_experience_years: parsedData.total_experience_years ?? null,
+          current_ctc_lakhs: parsedData.current_ctc_lakhs ?? null,
+          expected_ctc_lakhs: parsedData.expected_ctc_lakhs ?? null,
+          key_skills: parsedData.key_skills || null,
+          highest_qualification: parsedData.highest_qualification || null,
+        },
+        p_mandate_ids: selectedMandates,
+        p_resume_url: publicUrl,
+        p_resume_file_name: file.name,
+        p_parsed_data: parseResult?.data || {},
+      });
+
+      if (submitError) {
+        console.error("Application submit error:", submitError);
+        throw submitError;
       }
 
-      setCandidateId(candidateData.id);
+      setCandidateId(newCandidateId as string);
       setParsing(false);
       
       // Move to KYC step
