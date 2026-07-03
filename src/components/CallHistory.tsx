@@ -85,6 +85,12 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
   const [selectedCallLog, setSelectedCallLog] = useState<CallLog | null>(null);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [expandedAnalysis, setExpandedAnalysis] = useState<string | null>(null);
+  const [userToggled, setUserToggled] = useState(false);
+
+  const toggleAnalysis = (id: string) => {
+    setUserToggled(true);
+    setExpandedAnalysis(expandedAnalysis === id ? null : id);
+  };
 
   const { data: callLogs, isLoading, refetch } = useQuery({
     queryKey: ['call-logs', candidateId, statusFilter, searchQuery],
@@ -146,6 +152,14 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
       setAnalyzingId(null);
     }
   };
+
+  // On a candidate's timeline, surface the newest AI-analyzed call open by
+  // default — the latest summary is what a recruiter opens this tab for.
+  useEffect(() => {
+    if (!candidateId || userToggled || expandedAnalysis || !callLogs?.length) return;
+    const newest = callLogs.find((l) => l.analysis_json);
+    if (newest) setExpandedAnalysis(newest.id);
+  }, [candidateId, userToggled, expandedAnalysis, callLogs]);
 
   // Real-time subscription for call logs
   useEffect(() => {
@@ -321,7 +335,7 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
                             variant="outline"
                             size="sm"
                             className="h-7 gap-1 text-green-700 border-green-300 hover:bg-green-50"
-                            onClick={() => setExpandedAnalysis(expandedAnalysis === log.id ? null : log.id)}
+                            onClick={() => toggleAnalysis(log.id)}
                           >
                             <BrainCircuit className="h-4 w-4" />
                             AI Summary
