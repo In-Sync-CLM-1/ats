@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/contexts/OrgContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CallHistory } from "@/components/CallHistory";
 import { CandidateScoreCard } from "@/components/CandidateScoreCard";
 import { AIScreeningButton } from "@/components/AIScreeningButton";
@@ -18,10 +19,23 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+const DEFAULT_STAGES = ["Applied", "Screening", "Interview", "Offer", "Selected", "Joined"];
+
+const STAGE_BADGE_CLASS: Record<string, string> = {
+  Applied: "bg-slate-100 text-slate-700 border-slate-300",
+  Screening: "bg-amber-100 text-amber-800 border-amber-300",
+  Shortlisted: "bg-amber-100 text-amber-800 border-amber-300",
+  Interview: "bg-blue-100 text-blue-800 border-blue-300",
+  Offer: "bg-purple-100 text-purple-800 border-purple-300",
+  Selected: "bg-green-100 text-green-800 border-green-300",
+  Joined: "bg-emerald-100 text-emerald-800 border-emerald-300",
+};
+
 export default function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentOrg } = useOrg();
+  const queryClient = useQueryClient();
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
@@ -40,6 +54,35 @@ export default function CandidateDetail() {
     },
     enabled: !!id,
   });
+
+  // Pipeline stages for the stage-move control (org-configured, sensible fallback)
+  const { data: pipelineStages } = useQuery({
+    queryKey: ["pipeline-stages", currentOrg?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pipeline_stages")
+        .select("name, stage_order")
+        .eq("stage_type", "candidate")
+        .eq("is_active", true)
+        .order("stage_order");
+      return data || [];
+    },
+    enabled: !!currentOrg?.id,
+  });
+  const stageNames = pipelineStages?.length ? pipelineStages.map((s) => s.name) : DEFAULT_STAGES;
+
+  const moveStage = async (stage: string) => {
+    const { error } = await supabase
+      .from("candidates")
+      .update({ interview_stage: stage })
+      .eq("id", id!);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["candidate-detail", id] });
+    toast.success(`Stage updated to ${stage}`);
+  };
 
   // Fetch onboarding submission for this candidate
   const { data: onboardingSubmission } = useQuery({
@@ -124,15 +167,23 @@ export default function CandidateDetail() {
             <h1 className="text-2xl font-bold">
               {candidate.first_name} {candidate.last_name}
             </h1>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <Badge variant={
-                candidate.current_status === 'hired' ? 'default' :
-                candidate.current_status === 'interview' ? 'secondary' :
-                candidate.current_status === 'rejected' ? 'destructive' :
-                'outline'
-              }>
-                {candidate.current_status.replace('_', ' ').toUpperCase()}
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <Badge
+                variant="outline"
+                className={cn("font-medium", STAGE_BADGE_CLASS[candidate.interview_stage ?? ""] || "")}
+              >
+                {candidate.interview_stage || candidate.current_status.replace('_', ' ')}
               </Badge>
+              <Select value={candidate.interview_stage ?? undefined} onValueChange={moveStage}>
+                <SelectTrigger className="h-7 w-[150px] text-xs" aria-label="Move stage">
+                  <SelectValue placeholder="Move stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stageNames.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -302,6 +353,24 @@ export default function CandidateDetail() {
                   <div>
                     <span className="font-medium">Qualification: </span>
                     {candidate.highest_qualification}
+                  </div>
+                </div>
+              )}
+              {(candidate.current_ctc_lakhs !== null || candidate.expected_ctc_lakhs !== null) && (
+                <div className="flex items-center gap-3">
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <span className="font-medium">CTC: </span>
+                    ₹{(candidate.current_ctc_lakhs ?? 0).toFixed(1)}L current → ₹{(candidate.expected_ctc_lakhs ?? 0).toFixed(1)}L expected
+                  </div>
+                </div>
+              )}
+              {candidate.notice_period_days !== null && (
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <span className="font-medium">Notice Period: </span>
+                    {candidate.notice_period_days} days
                   </div>
                 </div>
               )}

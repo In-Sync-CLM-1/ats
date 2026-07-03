@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrg } from "@/contexts/OrgContext";
 import { toast } from "sonner";
 import { Mail, Loader2, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -59,12 +60,14 @@ export function EmailComposeDialog({
   recipientData,
   onEmailSent 
 }: EmailComposeDialogProps) {
+  const { currentOrg } = useOrg();
+  const orgName = currentOrg?.name || "Talent Team";
   const [mode, setMode] = useState<'simple' | 'template'>('simple');
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [fromName, setFromName] = useState("ATS");
+  const [fromName, setFromName] = useState("");
   const [replyTo, setReplyTo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -118,7 +121,7 @@ export function EmailComposeDialog({
     setSelectedTemplateId("");
     setSubject("");
     setBody("");
-    setFromName("ATS");
+    setFromName(currentOrg?.name || "Talent Team");
   };
 
   const getMergeData = (): Record<string, any> => {
@@ -329,7 +332,7 @@ export function EmailComposeDialog({
                 id="fromName"
                 value={fromName}
                 onChange={(e) => setFromName(e.target.value)}
-                placeholder="ATS"
+                placeholder={orgName}
                 disabled={isSending}
               />
             </div>
@@ -393,14 +396,14 @@ export function EmailComposeDialog({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={12}
-              placeholder={`Hi {{name}},
+              placeholder={`Hi ${recipientData.first_name || "there"},
 
 I hope this message finds you well.
 
 [Your message here]
 
 Best regards,
-ATS Team`}
+${orgName} Talent Team`}
               required
               disabled={isSending}
               className="font-mono text-sm"

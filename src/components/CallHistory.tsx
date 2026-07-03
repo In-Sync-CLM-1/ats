@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Phone, PlayCircle, Search, FileText, Plus, Edit2, BrainCircuit, Loader2 } from "lucide-react";
+import { Phone, PlayCircle, Search, FileText, Plus, Edit2, BrainCircuit, Loader2, Bot, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { CallDispositionDialog } from "./CallDispositionDialog";
@@ -232,20 +232,29 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
             </TableHeader>
             <TableBody>
               {callLogs.map((log) => (
-                <TableRow key={log.id}>
+                <Fragment key={log.id}>
+                <TableRow>
                   <TableCell className="whitespace-nowrap">
-                    {log.created_at && format(new Date(log.created_at), 'MMM dd, yyyy HH:mm')}
+                    {log.created_at && format(new Date(log.created_at), 'dd MMM yyyy, HH:mm')}
                   </TableCell>
                   {!candidateId && (
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       {log.candidate ? `${log.candidate.first_name} ${log.candidate.last_name}` : '-'}
                     </TableCell>
                   )}
                   <TableCell className="font-mono text-sm">{log.to_number}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusColor(log.status)}>
-                      {log.status.replace('-', ' ')}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={getStatusColor(log.status)}>
+                        {log.status.replace('-', ' ')}
+                      </Badge>
+                      {log.call_method === 'bolna' && (
+                        <Badge variant="outline" className="gap-1 text-purple-700 border-purple-300">
+                          <Bot className="h-3 w-3" />
+                          AI Agent
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>{formatDuration(log.conversation_duration)}</TableCell>
                   <TableCell>
@@ -309,31 +318,19 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
                         )}
                         {log.analysis_json && (
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
+                            className="h-7 gap-1 text-green-700 border-green-300 hover:bg-green-50"
                             onClick={() => setExpandedAnalysis(expandedAnalysis === log.id ? null : log.id)}
-                            title="View AI analysis"
                           >
-                            <BrainCircuit className="h-4 w-4 text-green-600" />
+                            <BrainCircuit className="h-4 w-4" />
+                            AI Summary
+                            {expandedAnalysis === log.id
+                              ? <ChevronUp className="h-3 w-3" />
+                              : <ChevronDown className="h-3 w-3" />}
                           </Button>
                         )}
                       </div>
-                      {expandedAnalysis === log.id && log.analysis_json && (
-                        <div className="text-xs bg-muted/60 rounded p-2 space-y-1 max-w-xs">
-                          {log.analysis_json.summary && (
-                            <p className="text-muted-foreground italic">{log.analysis_json.summary}</p>
-                          )}
-                          {log.analysis_json.next_step && (
-                            <p><span className="font-medium">Next:</span> {log.analysis_json.next_step}</p>
-                          )}
-                          {log.analysis_json.interest_level && (
-                            <p><span className="font-medium">Interest:</span> {log.analysis_json.interest_level}</p>
-                          )}
-                          {log.analysis_quality_score != null && (
-                            <p><span className="font-medium">Quality:</span> {log.analysis_quality_score}/100</p>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -363,6 +360,71 @@ export function CallHistory({ candidateId, limit = 50, showFilters = true }: Cal
                     )}
                   </TableCell>
                 </TableRow>
+                {expandedAnalysis === log.id && log.analysis_json && (
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={candidateId ? 8 : 9} className="bg-muted/40 p-4">
+                      <div className={`grid gap-4 ${log.transcript ? 'md:grid-cols-2' : ''}`}>
+                        {log.transcript && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-muted-foreground" />
+                              Transcript
+                            </h4>
+                            <div className="text-sm text-muted-foreground whitespace-pre-line max-h-64 overflow-y-auto rounded border bg-background p-3 leading-relaxed">
+                              {log.transcript}
+                            </div>
+                          </div>
+                        )}
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold flex items-center gap-2">
+                            <BrainCircuit className="h-4 w-4 text-purple-600" />
+                            AI Analysis
+                            {log.analysis_quality_score != null && (
+                              <Badge variant="outline" className="ml-auto text-green-700 border-green-300">
+                                Quality {log.analysis_quality_score}/100
+                              </Badge>
+                            )}
+                          </h4>
+                          {log.analysis_json.summary && (
+                            <p className="text-sm">{log.analysis_json.summary}</p>
+                          )}
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            {log.analysis_json.interest_level && (
+                              <div className="rounded border bg-background p-2">
+                                <p className="text-xs text-muted-foreground">Interest Level</p>
+                                <p className="font-medium capitalize">{log.analysis_json.interest_level}</p>
+                              </div>
+                            )}
+                            {log.analysis_json.expected_ctc && (
+                              <div className="rounded border bg-background p-2">
+                                <p className="text-xs text-muted-foreground">Expected CTC</p>
+                                <p className="font-medium">₹{(log.analysis_json.expected_ctc / 100000).toFixed(0)}L</p>
+                              </div>
+                            )}
+                            {log.analysis_json.notice_period_days != null && (
+                              <div className="rounded border bg-background p-2">
+                                <p className="text-xs text-muted-foreground">Notice Period</p>
+                                <p className="font-medium">{log.analysis_json.notice_period_days} days</p>
+                              </div>
+                            )}
+                            {log.analysis_json.joining_date && (
+                              <div className="rounded border bg-background p-2">
+                                <p className="text-xs text-muted-foreground">Joining Date</p>
+                                <p className="font-medium">{log.analysis_json.joining_date}</p>
+                              </div>
+                            )}
+                          </div>
+                          {log.analysis_json.next_step && (
+                            <p className="text-sm border-l-2 border-purple-300 pl-3">
+                              <span className="font-medium">Next step:</span> {log.analysis_json.next_step}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </Fragment>
               ))}
             </TableBody>
           </Table>

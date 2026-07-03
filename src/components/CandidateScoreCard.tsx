@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, RefreshCw } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 
 interface CandidateScoreCardProps {
@@ -33,6 +34,12 @@ const BREAKDOWN_MAX: Record<string, number> = {
   "Profile Completeness": 20,
   "Application Quality":  10,
 };
+
+// Older scores stored raw snake_case keys — always render human labels.
+const humanizeKey = (key: string) =>
+  key.includes("_") || key === key.toLowerCase()
+    ? key.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+    : key;
 
 export function CandidateScoreCard({ candidateId }: CandidateScoreCardProps) {
   const queryClient = useQueryClient();
@@ -123,18 +130,22 @@ export function CandidateScoreCard({ candidateId }: CandidateScoreCardProps) {
 
             {breakdown && (
               <div className="space-y-2">
-                {Object.entries(breakdown).map(([key, val]) => (
-                  <div key={key}>
-                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span>{key}</span>
-                      <span>{val} / {BREAKDOWN_MAX[key] ?? 100}</span>
+                {Object.entries(breakdown).map(([key, val]) => {
+                  const label = humanizeKey(key);
+                  const max = BREAKDOWN_MAX[label] ?? 100;
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>{label}</span>
+                        <span>{val} / {max}</span>
+                      </div>
+                      <Progress
+                        value={(val / max) * 100}
+                        className={`h-2 [&>div]:${BREAKDOWN_COLORS[label] || "bg-primary"}`}
+                      />
                     </div>
-                    <Progress
-                      value={(val / (BREAKDOWN_MAX[key] ?? 100)) * 100}
-                      className={`h-2 [&>div]:${BREAKDOWN_COLORS[key] || "bg-primary"}`}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -145,7 +156,7 @@ export function CandidateScoreCard({ candidateId }: CandidateScoreCardProps) {
             )}
 
             <p className="text-xs text-muted-foreground text-right">
-              Scored {new Date(score.scored_at).toLocaleString("en-IN")}
+              Scored {format(new Date(score.scored_at), "dd MMM yyyy, h:mm a")}
             </p>
           </div>
         )}
