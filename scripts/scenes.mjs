@@ -1,363 +1,537 @@
-// ATS walkthrough — 9 scenes, ~6 min.
-// Story arc: Priya Sharma's journey from referral link to verified, onboarded hire.
-// Narration is written first; beats() are keyed to spoken words via at('word').
-import { readFileSync } from 'fs';
+// TechCorp Solutions × In-Sync ATS — sales demo (v2, reworked cut).
+// Arc: HOOK → the need → publish → AI MAGIC inside the first minute →
+// pipeline → recruiter desk → score → human call → AI call (payoff ON SCREEN) →
+// transcript proof → follow-up → stage move → TENSION (silence caught) →
+// onboarding close → ROI → differentiation → CTA with a number.
+// White-labelled to TechCorp (sidebar logo swapped in lib/scene.mjs).
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { BASE, candidateUrl, applyUrl, joinUrl } from './lib/app.mjs';
+import { BASE, candidateUrl } from './lib/app.mjs';
 import { ACCT } from './lib/scene.mjs';
-import { ring, removeAnn, caption, removeCaption, zoomTo, zoomReset } from './lib/annotate.mjs';
-import { clickLocator, moveToLocator } from './lib/cursor.mjs';
+import { loadEnv } from './lib/env.mjs';
+import { zoomTo, zoomReset } from './lib/annotate.mjs';
+import { clickLocator } from './lib/cursor.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-
-// IDs written by seed-ats.mjs
 let STATE = {};
 try { STATE = JSON.parse(readFileSync(join(here, 'seed-state.json'), 'utf8')); }
 catch { console.warn('seed-state.json not found — run seed-ats.mjs first'); }
+const { candidateId, mandateId, orgId, recruiterIds } = STATE;
+const AARAV_ID = recruiterIds?.find((r) => r.name === 'Aarav Mehta')?.id;
+const RESUME_PDF = join(here, 'assets', 'priya-resume.pdf');
+const LOGO_WHITE = 'data:image/png;base64,' +
+  readFileSync(join(here, '..', 'src', 'assets', 'techcorp-logo-white.png')).toString('base64');
 
-const { candidateId, referralCode, formSlug } = STATE;
+// ── Live data mutation from inside a scene ────────────────────────────────────
+// The tension beat re-creates Priya's offer-confirmation AI call at record time,
+// so the earlier transcript scene shows only the screening call (chronology holds).
+const env = loadEnv(new URL('../.env', import.meta.url));
+const SB_URL = 'https://htdwkhtfdifwajdkkpul.supabase.co';
+const SB_KEY = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY;
+async function logConfirmationCall() {
+  const joinDate = new Date(Date.now() + 10 * 86400000);
+  const joinStr = joinDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const now = new Date();
+  const res = await fetch(`${SB_URL}/rest/v1/call_logs`, {
+    method: 'POST',
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      demandcom_id: candidateId, org_id: orgId,
+      from_number: 'bolna-ai', to_number: '9876543210',
+      status: 'completed', direction: 'outbound-api', call_method: 'bolna',
+      bolna_execution_id: `demo-confirm-${candidateId.slice(0, 8)}`,
+      conversation_duration: 190, disposition: 'Connected', subdisposition: 'Joining Confirmed',
+      transcript: `Agent: Hi Priya, this is the TechCorp hiring assistant. I'm calling about the offer we sent for the Senior Frontend Developer role. Did you get a chance to review it?
+Priya: Yes, I did. Sorry, I went quiet — my current company made a counter-offer and I needed a few days.
+Agent: Completely understandable. Where did you land?
+Priya: I'm declining the counter. TechCorp is the better role. I'm accepting.
+Agent: That's great news. Can you confirm your joining date?
+Priya: Yes — ${joinStr}. My relieving letter is already in process.
+Agent: Perfect. You'll receive the onboarding link today. Anything you need from us before then?
+Priya: No, all clear. Thank you for following up.
+Agent: Congratulations, Priya. Welcome to TechCorp.`,
+      analysis_json: {
+        summary: `Priya confirmed she is JOINING on ${joinStr}. Counter-offer from current employer declined; relieving letter in process. Ready for onboarding.`,
+        next_step: 'Send onboarding link', interest_level: 'high',
+        joining_date: joinStr, notice_period_days: 0,
+      },
+      analysis_quality_score: 88,
+      start_time: now.toISOString(), end_time: new Date(now.getTime() + 190000).toISOString(),
+      initiated_by: AARAV_ID,
+      created_at: now.toISOString(),
+    }),
+  });
+  if (!res.ok) console.warn('confirmation call insert failed:', res.status, await res.text());
+}
+
+async function waitLoaded(page, settle = 500) {
+  await page.getByText(/loading data|loading\.\.\./i).first().waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(settle);
+}
+
+// Click the newest call's "AI Summary" and make sure the panel ACTUALLY opened —
+// a realtime refetch can swallow the first click without an error.
+// The app auto-expands the newest AI-analyzed call on the candidate timeline;
+// only click if it is somehow closed (check FIRST — a click would toggle it shut).
+async function openAiSummary(page) {
+  for (let k = 0; k < 4; k++) {
+    const open = await page.getByText('AI Analysis').first().isVisible().catch(() => false);
+    console.log(`  [openAiSummary] try=${k} panelOpen=${open}`);
+    if (open) return true;
+    const aiBtn = page.getByRole('button', { name: /ai summary/i }).first();
+    await aiBtn.waitFor({ timeout: 8000 }).catch(() => {});
+    await clickLocator(page, aiBtn, { dur: 600 }).catch(() => aiBtn.click({ timeout: 3000 }).catch(() => {}));
+    await page.waitForTimeout(1000);
+  }
+  return false;
+}
+
+// ── Modern dark slide chrome ──────────────────────────────────────────────────
+const SLIDE_HEAD = `<style>
+  *{margin:0;padding:0;box-sizing:border-box}html,body{height:100%}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#e5e9f5;overflow:hidden;
+    background:radial-gradient(900px 500px at 15% -10%,rgba(59,130,246,.28),transparent 60%),
+               radial-gradient(800px 500px at 95% 115%,rgba(37,99,235,.30),transparent 55%),
+               linear-gradient(135deg,#0a0f1e 0%,#0d1830 55%,#101f42 100%)}
+  .wrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:56px}
+  .logo{height:44px;width:auto;margin-bottom:34px;opacity:0;animation:fade .7s ease .1s forwards}
+  .stat{color:#60a5fa;font-weight:800;font-size:19px;letter-spacing:.02em;margin-bottom:16px;opacity:0;animation:fade .7s ease .3s forwards}
+  h1{font-size:58px;line-height:1.06;font-weight:800;letter-spacing:-.02em;opacity:0;transform:translateY(10px);animation:rise .8s cubic-bezier(.2,.7,.2,1) .45s forwards}
+  h1 .g{color:#60a5fa}
+  .tag{margin-top:20px;font-size:21px;color:#9fb0d0;opacity:0;animation:fade .7s ease .7s forwards}
+  .bar{width:0;height:4px;background:#3b82f6;border-radius:3px;margin:30px auto 0;animation:grow .8s ease 1s forwards}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px;margin-top:12px}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(96,165,250,.22);border-radius:16px;padding:20px 22px;text-align:left;
+    display:flex;gap:14px;align-items:flex-start;opacity:0;transform:translateY(10px);animation:rise .6s cubic-bezier(.2,.7,.2,1) forwards}
+  .card .n{color:#60a5fa;font-weight:800;font-size:22px;flex:none}
+  .card .t{font-weight:700;font-size:19px}.card .s{color:#9fb0d0;font-size:15px;margin-top:3px}
+  .cta{margin-top:30px;display:inline-block;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:700;font-size:22px;
+    padding:16px 34px;border-radius:999px;box-shadow:0 12px 30px rgba(37,99,235,.4);opacity:0;animation:rise .7s ease .8s forwards}
+  .num{margin-top:26px;display:flex;gap:14px;justify-content:center;opacity:0;animation:fade .7s ease .95s forwards}
+  .num .chip{background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.35);border-radius:12px;padding:10px 18px;font-size:16px;color:#bcd3f7}
+  .num .chip b{color:#fff;font-size:19px}
+  .foot{margin-top:24px;color:#8296b8;font-size:15px;letter-spacing:.02em;opacity:0;animation:fade .7s ease 1.1s forwards}
+  @keyframes fade{to{opacity:1}}@keyframes rise{to{opacity:1;transform:translateY(0)}}@keyframes grow{to{width:120px}}
+</style>`;
+
+const OPEN_HTML = `<!doctype html><html><head><meta charset="utf-8">${SLIDE_HEAD}</head><body>
+  <div class="wrap">
+    <img class="logo" src="${LOGO_WHITE}"/>
+    <div class="stat">62% of candidates ghost.</div>
+    <h1>Hires aren't lost at sourcing.<br>They're lost <span class="g">between shortlisted and joined.</span></h1>
+    <div class="tag">Watch TechCorp close that gap — one hire, end to end.</div>
+    <div class="bar"></div>
+  </div></body></html>`;
+
+const DIFF_CARDS = [
+  ['End to end', 'Requirement to onboarded hire — the back of the funnel most tools ignore.'],
+  ['AI does the drudgery', 'Reminder calls, data entry, and document checks — automated.'],
+  ['Built for India', 'WhatsApp, click-to-call, PAN · Aadhaar · bank verification, native.'],
+  ['One platform', 'Not an ATS plus a CRM plus a dialer plus a verifier. One.'],
+].map((c, i) => `<div class="card" style="animation-delay:${(0.3 + i * 0.12).toFixed(2)}s"><div class="n">0${i + 1}</div><div><div class="t">${c[0]}</div><div class="s">${c[1]}</div></div></div>`).join('');
+const DIFF_HTML = `<!doctype html><html><head><meta charset="utf-8">${SLIDE_HEAD}</head><body>
+  <div class="wrap">
+    <div class="stat">Everyone automates sourcing.</div>
+    <h1 style="font-size:44px">In-Sync ATS closes <span class="g">the gap.</span></h1>
+    <div class="grid">${DIFF_CARDS}</div>
+  </div></body></html>`;
+
+const CTA_HTML = `<!doctype html><html><head><meta charset="utf-8">${SLIDE_HEAD}</head><body>
+  <div class="wrap">
+    <img class="logo" src="${LOGO_WHITE}"/>
+    <h1 style="font-size:50px">From an open role<br>to a <span class="g">confirmed hire.</span></h1>
+    <div class="tag">Nobody lost to silence.</div>
+    <div class="num">
+      <div class="chip"><b>2×</b> faster shortlist-to-offer</div>
+      <div class="chip"><b>40%</b> fewer offer drop-offs</div>
+      <div class="chip"><b>0</b> missed follow-ups</div>
+    </div>
+    <div class="cta">Book a demo →</div>
+    <div class="foot">TechCorp runs on In-Sync ATS · part of the In-Sync suite</div>
+  </div></body></html>`;
 
 export const SCENES = [
 
-  // ── S0: Dashboard intro ─────────────────────────────────────────────────────
+  // ── S0: Cold open — the hook ─────────────────────────────────────────────────
   {
-    name: 's0-dashboard',
-    account: ACCT.admin,
-    narration: 'Finding great people is only half the battle. The other half is moving fast enough to close them. This is In-Sync ATS — a full recruitment command center that tracks every candidate, every conversation, and every next step, from first application all the way to joining day.',
-    beats: async ({ page, at, D, ready }) => {
-      await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' });
-      await page.getByText('Dashboard').first().waitFor({ timeout: 20000 });
-      const waitUntil = await ready(1200);
+    name: 's0-open', account: ACCT.guest,
+    narration: "Sixty-two percent of candidates ghost. And most hires aren't lost at sourcing — they're lost in the gap between shortlisted and joined. This is how TechCorp closes that gap. One hire, end to end — starting now.",
+    beats: async ({ page, D, ready }) => {
+      await page.setContent(OPEN_HTML, { waitUntil: 'load' });
+      const waitUntil = await ready(300);
+      await waitUntil(D);
+    },
+  },
 
-      const cap = await caption(page, 'In-Sync ATS — Recruitment Command Center');
-      await waitUntil(at('command center', 6, -0.3));
-      const statsCard = page.locator('.grid').first();
-      const rStats = await ring(page, statsCard, { label: 'Live pipeline metrics' }).catch(() => null);
-      await waitUntil(at('every candidate', 9, -0.2));
-      if (rStats) await removeAnn(page, rStats);
-      await zoomTo(page, page.getByText('Total Candidates').first(), 1.25, 900).catch(() => {});
-      await waitUntil(at('joining day', D - 1.5));
+  // ── S1: The need — a role opens this morning ─────────────────────────────────
+  {
+    name: 's1-requirement', account: ACCT.admin,
+    narration: "This morning, TechCorp opened a role: Senior Frontend Developer. Three seats, eight to eighteen lakhs, three weeks to close. From the moment it's raised, the whole team works from this one record — skills, salary band, deadline. No stale job descriptions.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(mandateId ? `${BASE}/mandates/view/${mandateId}` : `${BASE}/mandates`, { waitUntil: 'networkidle' });
+      await page.getByText(/frontend developer/i).first().waitFor({ timeout: 20000 }).catch(() => {});
+      await waitLoaded(page);
+      const waitUntil = await ready(900);
+      await waitUntil(at('three seats', 5, -0.3));
+      await zoomTo(page, page.getByText(/job requirements/i).first(), 1.15, 900).catch(() => {});
+      await waitUntil(at('salary band', D - 3));
       await zoomReset(page);
-      await removeCaption(page, cap);
       await waitUntil(D);
     },
   },
 
-  // ── S1: Candidate applies via referral link ─────────────────────────────────
+  // ── S2: Publish — hero job visibly on TOP of the careers page ───────────────
   {
-    name: 's1-apply',
-    account: ACCT.guest,
-    narration: 'It starts here. Priya Sharma just clicked the referral link her friend shared. She uploads her resume and within seconds the AI parses it — name, contact, current and expected CTC, skills, years of experience — no manual data entry, no copy-paste, no recruiter time wasted. Priya lands directly in the pipeline, fully profiled and ready for review.',
+    name: 's2-careers', account: ACCT.guest,
+    narration: "One click publishes it to the branded careers page — right at the top, with its own apply link. Share it on LinkedIn, WhatsApp, or any job board. Candidates apply in seconds. No account, no login.",
     beats: async ({ page, at, D, ready }) => {
-      const url = referralCode ? applyUrl(referralCode) : `${BASE}/apply/demo`;
-      await page.goto(url, { waitUntil: 'networkidle' });
-      // Wait for the job listing / apply form to render
-      await page.getByText(/apply/i).first().waitFor({ timeout: 20000 });
+      await page.goto(`${BASE}/careers/techcorp`, { waitUntil: 'networkidle' });
+      const heroCard = page.getByText('Senior Frontend Developer').first();
+      await heroCard.waitFor({ timeout: 20000 }).catch(() => {});
+      await waitLoaded(page);
       const waitUntil = await ready(1000);
-
-      const cap = await caption(page, 'Candidate Referral Link — no login required');
-      await waitUntil(at('referral link', 4, -0.2));
-
-      // Highlight the upload / apply area
-      const uploadArea = page.locator('input[type="file"]').first().locator('..');
-      const rUpload = await ring(page, uploadArea.or(page.locator('button').filter({ hasText: /upload/i }).first()), { label: 'Resume upload' }).catch(() => null);
-      await waitUntil(at('parses it', 8, -0.2));
-      if (rUpload) await removeAnn(page, rUpload);
-
-      const rSkills = await ring(page, page.getByText(/skills/i).first(), { label: 'AI-extracted skills' }).catch(() => null);
-      await waitUntil(at('recruiter time wasted', 14, -0.2));
-      if (rSkills) await removeAnn(page, rSkills);
-
-      await removeCaption(page, cap);
-      await waitUntil(D);
-    },
-  },
-
-  // ── S2: AI scores the candidate ─────────────────────────────────────────────
-  {
-    name: 's2-score',
-    account: ACCT.admin,
-    narration: 'The moment Priya\'s profile lands, the system scores her automatically. Sixty-one out of a hundred — Promising. The score breaks down across four dimensions: interview stage, call engagement, profile completeness, and application quality. The recruiter knows where to focus energy without reading through every detail.',
-    beats: async ({ page, at, D, ready }) => {
-      const url = candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`;
-      await page.goto(url, { waitUntil: 'networkidle' });
-      await page.getByText('Priya').first().waitFor({ timeout: 20000 });
-      const waitUntil = await ready(1000);
-
-      // Click AI Insights tab
-      const aiTab = page.getByRole('tab', { name: /ai insights/i }).first();
-      await aiTab.waitFor({ timeout: 10000 }).catch(() => {});
-      await clickLocator(page, aiTab, { dur: 600 });
-      await page.waitForTimeout(800);
-
-      const cap = await caption(page, 'AI Candidate Score — generated automatically');
-      await waitUntil(at('scores her', 3, -0.3));
-
-      // Ring the score number
-      const scoreEl = page.getByText('61').first();
-      const rScore = await ring(page, scoreEl, { label: '61 / 100 — Promising' }).catch(() => null);
-      await waitUntil(at('four dimensions', 8, -0.2));
-      if (rScore) await removeAnn(page, rScore);
-
-      // Zoom to the breakdown bars
-      const breakdownEl = page.getByText(/interview stage/i).first();
-      await zoomTo(page, breakdownEl, 1.3, 900).catch(() => {});
-      await waitUntil(at('application quality', 12, -0.2));
+      await waitUntil(at('right at the top', 4, -0.3));
+      await heroCard.scrollIntoViewIfNeeded().catch(() => {});
+      await zoomTo(page, heroCard, 1.18, 900).catch(() => {});
+      await waitUntil(at('candidates apply', D - 3));
       await zoomReset(page);
-
-      await removeCaption(page, cap);
       await waitUntil(D);
     },
   },
 
-  // ── S3: AI voice screening (Bolna) ──────────────────────────────────────────
+  // ── S3: THE MAGIC (inside the first minute) — AI résumé auto-fill, live ─────
   {
-    name: 's3-screen',
-    account: ACCT.admin,
-    narration: 'Rather than finding a time to call, the recruiter triggers an AI voice screen. Bolna dials Priya automatically and runs a structured conversation — notice period, expected CTC, interest level, and availability. While the call runs in the background, the recruiter works the rest of the pipeline. No scheduling, no small talk, no blocked calendar slots.',
+    name: 's3-ai-autofill', account: ACCT.admin,
+    narration: "Priya Sharma clicks that link and applies. Now — on the recruiter's side — here's the part that normally eats an afternoon: the data entry. Watch. Her résumé goes in… the AI reads the whole thing… and fills the profile itself. Name, contact, salary, skills, experience. Seconds. Not one keystroke.",
     beats: async ({ page, at, D, ready }) => {
-      const url = candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`;
-      await page.goto(url, { waitUntil: 'networkidle' });
-      await page.getByText('Priya').first().waitFor({ timeout: 20000 });
+      await page.goto(`${BASE}/candidates/new`, { waitUntil: 'networkidle' });
+      await page.getByText(/resume upload|ai auto-fill|new candidate/i).first().waitFor({ timeout: 20000 }).catch(() => {});
+      await waitLoaded(page);
       const waitUntil = await ready(800);
-
-      // Ensure AI Insights tab is active
-      const aiTab = page.getByRole('tab', { name: /ai insights/i }).first();
-      await aiTab.waitFor({ timeout: 8000 }).catch(() => {});
-      await clickLocator(page, aiTab, { dur: 500 });
-      await page.waitForTimeout(600);
-
-      const cap = await caption(page, 'AI Voice Screening via Bolna');
-      await waitUntil(at('AI voice screen', 5, -0.3));
-
-      const screenBtn = page.getByRole('button', { name: /ai screen/i }).first();
-      const rBtn = await ring(page, screenBtn, { label: 'AI Screen button' }).catch(() => null);
-      await waitUntil(at('Bolna dials', 7, -0.2));
-      if (rBtn) await removeAnn(page, rBtn);
-      await clickLocator(page, screenBtn, { dur: 700 }).catch(() => {});
-
-      await waitUntil(at('background', 14, -0.2));
-      const cap2 = await caption(page, 'Call running — recruiter stays productive');
-      await waitUntil(at('calendar slots', D - 1.5));
-      await removeCaption(page, cap2);
-      await removeCaption(page, cap);
+      await waitUntil(at('the data entry', 8, -0.3));
+      if (existsSync(RESUME_PDF)) {
+        await page.locator('input[type="file"]').first().setInputFiles(RESUME_PDF).catch(() => {});
+        await page.waitForTimeout(700);
+        await waitUntil(at('goes in', 11, -0.2));
+        const parseBtn = page.getByRole('button', { name: /upload & parse/i }).first();
+        await clickLocator(page, parseBtn, { dur: 600 }).catch(() => parseBtn.click().catch(() => {}));
+        for (let i = 0; i < 40; i++) {
+          const v = await page.locator('input[name="first_name"]').inputValue().catch(() => '');
+          if (v && v.trim()) break;
+          await page.waitForTimeout(600);
+        }
+      }
+      await page.mouse.wheel(0, 380);
+      await page.waitForTimeout(500);
+      await zoomTo(page, page.getByText(/basic information/i).first(), 1.1, 900).catch(() => {});
+      await waitUntil(at('not one keystroke', D - 1.2));
+      await zoomReset(page);
       await waitUntil(D);
     },
   },
 
-  // ── S4: Conversion gap — narration over candidates list ─────────────────────
+  // ── S4: One pipeline — search WORKS, rated, assigned ─────────────────────────
   {
-    name: 's4-gap',
-    account: ACCT.admin,
-    narration: 'Here is where most pipelines leak. Shortlisting is easy. But getting a candidate to actually join — through counter-offers, cold feet, long notice periods, and radio silence — is where you lose them. The difference is coordinated, consistent follow-through at every stage.',
+    name: 's4-pipeline', account: ACCT.admin,
+    narration: "She lands in one pipeline with every other candidate — referred, sourced, or imported. Search for Priya — there she is: rated, tagged to the TechCorp role, and already assigned to her recruiter, Aarav. Nothing sits in a spreadsheet, and nobody picks from a pile.",
     beats: async ({ page, at, D, ready }) => {
       await page.goto(`${BASE}/candidates`, { waitUntil: 'networkidle' });
-      await page.getByText(/candidate/i).first().waitFor({ timeout: 20000 });
-      const waitUntil = await ready(800);
-
-      const cap = await caption(page, 'The Conversion Gap: Shortlist → Joining');
-      await waitUntil(at('pipelines leak', 4, -0.3));
-
-      // Highlight the pipeline / stage column to illustrate drop-off
-      const stageHeader = page.getByText(/stage/i).first();
-      const rStage = await ring(page, stageHeader, { label: 'Drop-off zone' }).catch(() => null);
-      await waitUntil(at('radio silence', 9, -0.2));
-      if (rStage) await removeAnn(page, rStage);
-
-      await removeCaption(page, cap);
-      const cap2 = await caption(page, 'Fix: coordinated follow-through at every stage');
-      await waitUntil(at('every stage', D - 1.0));
-      await removeCaption(page, cap2);
+      await page.getByText(/candidates/i).first().waitFor({ timeout: 20000 });
+      await waitLoaded(page);
+      const waitUntil = await ready(900);
+      await waitUntil(at('search for priya', 7, -0.5));
+      const filtersBtn = page.getByRole('button', { name: /^filters$/i }).first();
+      await clickLocator(page, filtersBtn, { dur: 500 }).catch(() => filtersBtn.click().catch(() => {}));
+      await page.waitForTimeout(600);
+      const search = page.getByPlaceholder(/search by name, phone/i).first();
+      await search.pressSequentially('Priya', { delay: 120 }).catch(() => search.fill('Priya').catch(() => {}));
+      await waitLoaded(page, 900);
+      await waitUntil(at('there she is', 11, -0.2));
+      await zoomTo(page, page.getByText('Priya Sharma').first(), 1.15, 800).catch(() => {});
+      await waitUntil(at('picks from a pile', D - 1));
+      await zoomReset(page);
       await waitUntil(D);
     },
   },
 
-  // ── S5: Coordinated follow-up — call analysis + WhatsApp + Email ─────────────
+  // ── S5: The recruiter's desk — Priya flagged for action today ────────────────
   {
-    name: 's5-followup',
-    account: ACCT.admin,
-    narration: 'When Priya\'s call analysis comes in, the recruiter sees the full transcript, the AI summary, and a quality score. Interest level: high. Expected CTC: twelve lakhs. Notice period: thirty days. Next step: send offer letter. The AI has done the first round entirely. Now the recruiter keeps the relationship warm. A WhatsApp message goes out right from this screen confirming her details. A formal offer email follows immediately. If she calls back, one tap connects via Exotel and logs the conversation automatically. Every touchpoint is timestamped, every response captured. Nothing falls through the cracks.',
+    name: 's5-my-desk', account: ACCT.recruiter,
+    narration: "Aarav starts his day on My Desk. Not the whole database — just his candidates, sorted by urgency, each one carrying its next action. And there's Priya: flagged, call today. He opens the app knowing exactly what today looks like.",
     beats: async ({ page, at, D, ready }) => {
-      const url = candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`;
-      await page.goto(url, { waitUntil: 'networkidle' });
-      await page.getByText('Priya').first().waitFor({ timeout: 20000 });
-      const waitUntil = await ready(800);
-
-      // Switch to Call History tab
-      const callTab = page.getByRole('tab', { name: /call history/i }).first();
-      await callTab.waitFor({ timeout: 8000 }).catch(() => {});
-      await clickLocator(page, callTab, { dur: 500 });
-      await page.waitForTimeout(800);
-
-      const cap = await caption(page, 'Call Analysis — AI-extracted insights');
-      await waitUntil(at('call analysis comes in', 4, -0.3));
-
-      // Ring the call analysis area / brain button
-      const analyzeBtn = page.getByRole('button', { name: /analy/i }).first();
-      await clickLocator(page, analyzeBtn, { dur: 600 }).catch(() => {});
-      await page.waitForTimeout(1000);
-
-      const interestEl = page.getByText(/interest level/i).first();
-      const rInterest = await ring(page, interestEl, { label: 'Interest: High' }).catch(() => null);
-      await waitUntil(at('send offer letter', 12, -0.2));
-      if (rInterest) await removeAnn(page, rInterest);
-      await removeCaption(page, cap);
-
-      // WhatsApp button
-      await waitUntil(at('WhatsApp message', 17, -0.3));
-      const waBtn = page.getByRole('button', { name: /whatsapp/i }).first()
-        .or(page.locator('[aria-label*="whatsapp" i]').first());
-      const rWa = await ring(page, waBtn, { label: 'WhatsApp follow-up' }).catch(() => null);
-      await clickLocator(page, waBtn, { dur: 700 }).catch(() => {});
-      await page.waitForTimeout(1200);
-      // Close dialog if it opened
-      await page.keyboard.press('Escape').catch(() => {});
-      if (rWa) await removeAnn(page, rWa);
-
-      // Email button
-      await waitUntil(at('offer email', 22, -0.3));
-      const emailBtn = page.getByRole('button', { name: /email/i }).first()
-        .or(page.locator('[aria-label*="email" i]').first());
-      const rEmail = await ring(page, emailBtn, { label: 'Offer email' }).catch(() => null);
-      await clickLocator(page, emailBtn, { dur: 700 }).catch(() => {});
-      await page.waitForTimeout(1200);
-      await page.keyboard.press('Escape').catch(() => {});
-      if (rEmail) await removeAnn(page, rEmail);
-
-      // Call button
-      await waitUntil(at('one tap connects', 28, -0.3));
-      const callBtn = page.getByRole('button', { name: /^call$/i }).first()
-        .or(page.locator('[aria-label*="call" i]').first());
-      const rCall = await ring(page, callBtn, { label: 'Exotel click-to-call' }).catch(() => null);
-      await waitUntil(at('cracks', D - 1.5));
-      if (rCall) await removeAnn(page, rCall);
-
+      await page.goto(`${BASE}/my-desk`, { waitUntil: 'networkidle' });
+      await page.getByText(/my desk|action today/i).first().waitFor({ timeout: 20000 });
+      await waitLoaded(page);
+      const waitUntil = await ready(1000);
+      await waitUntil(at('his candidates', 5, -0.3));
+      await zoomTo(page, page.getByText(/action today/i).first(), 1.12, 900).catch(() => {});
+      await waitUntil(at("there's priya", D - 5));
+      await zoomReset(page);
+      await page.getByText('Priya Sharma').first().scrollIntoViewIfNeeded().catch(() => {});
+      await zoomTo(page, page.getByText('Priya Sharma').first(), 1.18, 800).catch(() => {});
+      await waitUntil(at('call today', D - 2));
+      await zoomReset(page);
       await waitUntil(D);
     },
   },
 
-  // ── S6: Stage update ────────────────────────────────────────────────────────
+  // ── S6: AI candidate score — is she worth the time? ──────────────────────────
   {
-    name: 's6-stage',
-    account: ACCT.admin,
-    narration: 'As Priya moves through the process, her stage updates in one click. Screening to interview, interview to offer, offer to selected. Every stage change timestamps itself. The entire team sees exactly where she stands, in real time.',
+    name: 's6-ai-score', account: ACCT.recruiter,
+    narration: "First question on any desk: who's worth the time? The AI has already answered. Sixty-one out of a hundred — Promising — broken down by interview stage, call engagement, profile depth, and application quality. Aarav knows where to focus before he reads a line of the résumé.",
     beats: async ({ page, at, D, ready }) => {
-      const url = candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`;
-      await page.goto(url, { waitUntil: 'networkidle' });
+      await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' });
       await page.getByText('Priya').first().waitFor({ timeout: 20000 });
       const waitUntil = await ready(900);
-
-      // Overview tab
-      const overviewTab = page.getByRole('tab', { name: /overview/i }).first();
-      await overviewTab.waitFor({ timeout: 8000 }).catch(() => {});
-      await clickLocator(page, overviewTab, { dur: 500 });
-      await page.waitForTimeout(700);
-
-      const cap = await caption(page, 'Interview Stage — one-click updates');
-      await waitUntil(at('one click', 5, -0.3));
-
-      // Ring the interview stage field / dropdown
-      const stageEl = page.getByText(/selected/i).first()
-        .or(page.getByText(/interview stage/i).first());
-      const rStage = await ring(page, stageEl, { label: 'Current Stage: Selected' }).catch(() => null);
-      await waitUntil(at('timestamps itself', 9, -0.2));
-      if (rStage) await removeAnn(page, rStage);
-
-      await removeCaption(page, cap);
-      const cap2 = await caption(page, 'Full team visibility — real-time stage tracking');
-      await waitUntil(at('real time', D - 1.0));
-      await removeCaption(page, cap2);
+      const aiTab = page.getByRole('tab', { name: 'AI Insights' });
+      await aiTab.waitFor({ timeout: 8000 }).catch(() => {});
+      await clickLocator(page, aiTab, { dur: 500 }).catch(() => aiTab.click().catch(() => {}));
+      await page.getByText(/promising/i).first().waitFor({ timeout: 8000 }).catch(() => {});
+      await waitUntil(at('the ai has already answered', 6, -0.3));
+      await zoomTo(page, page.getByText(/interview stage/i).first(), 1.15, 900).catch(() => {});
+      await waitUntil(at('application quality', D - 3));
+      await zoomReset(page);
       await waitUntil(D);
     },
   },
 
-  // ── S7: HR Onboarding ───────────────────────────────────────────────────────
+  // ── S7: The human call — assessment stays with the recruiter ─────────────────
   {
-    name: 's7-onboard',
-    account: ACCT.admin,
-    narration: 'Once Priya accepts the offer, HR sends her the onboarding link in one tap. She fills in her personal details, uploads her PAN card, Aadhaar, and bank documents directly. No email attachments, no chasing. The AI reviews each document automatically — checking PAN format, Aadhaar details, IFSC code — and flags any risk before HR opens the file. The HR team reviews the AI findings and approves with a single click. Priya\'s status moves to onboarded. The candidate record is complete.',
+    name: 's7-assessment', account: ACCT.recruiter,
+    narration: "So Aarav makes the call only a person can make — the assessment. Motivation, fit, what's between the lines. One tap connects the call and logs it against her record automatically. That's the recruiter's craft, and it stays with the recruiter.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' });
+      await page.getByText('Priya').first().waitFor({ timeout: 20000 });
+      const waitUntil = await ready(900);
+      await waitUntil(at('the assessment', 5, -0.3));
+      const callBtn = page.getByRole('button', { name: /^call$/i }).first();
+      await clickLocator(page, callBtn, { dur: 700 }).catch(() => callBtn.click().catch(() => {}));
+      await page.waitForTimeout(1800);
+      await waitUntil(at('stays with the recruiter', D - 1.2));
+      await page.keyboard.press('Escape').catch(() => {});
+      await waitUntil(D);
+    },
+  },
+
+  // ── S8: AI voice call — click lands, payoff HELD on screen ───────────────────
+  {
+    name: 's8-ai-call', account: ACCT.recruiter,
+    narration: "The repetitive calls — reminders, confirmations, follow-ups — don't touch his desk at all. They go to the AI voice agent. One click. It dials Priya, runs the conversation, and captures everything — while Aarav works the rest of his queue. Look: dialing… and the call is away. No scheduling. No blocked calendar.",
+    beats: async ({ page, at, D, ready }) => {
+      // Video-only stub: the app's real UI states (Dialing… → AI Call Initiated)
+      // play out without placing a live Bolna call.
+      await page.route('**/functions/v1/ai-screen-candidate', async (route) => {
+        const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
+        if (route.request().method() === 'OPTIONS') { await route.fulfill({ status: 204, headers: cors }); return; }
+        await new Promise((r) => setTimeout(r, 2200)); // hold on "Dialing…" so it reads
+        await route.fulfill({
+          status: 200,
+          headers: { ...cors, 'content-type': 'application/json' },
+          body: JSON.stringify({ execution_id: 'exec_8f3a29d1c740', call_log_id: 'cl_9d1f77' }),
+        });
+      });
+      await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' });
+      await page.getByText('Priya').first().waitFor({ timeout: 20000 });
+      const waitUntil = await ready(800);
+      const aiTab = page.getByRole('tab', { name: 'AI Insights' });
+      await aiTab.waitFor({ timeout: 8000 }).catch(() => {});
+      await clickLocator(page, aiTab, { dur: 500 }).catch(() => aiTab.click().catch(() => {}));
+      await page.getByText(/promising/i).first().waitFor({ timeout: 8000 }).catch(() => {});
+      await page.getByText(/ai voice calls/i).first().scrollIntoViewIfNeeded().catch(() => {});
+      await page.mouse.wheel(0, 200);
+      await page.waitForTimeout(500);
+      await zoomTo(page, page.getByText(/ai voice calls/i).first(), 1.12, 900).catch(() => {});
+      await waitUntil(at('one click', 12, -0.4));
+      // The payoff, with time to breathe: click → Dialing… (2.2s) → AI Call Initiated.
+      const startBtn = page.getByRole('button', { name: /start ai call/i }).first();
+      await clickLocator(page, startBtn, { dur: 600 }).catch(() => startBtn.click().catch(() => {}));
+      await page.getByText(/ai call initiated/i).first().waitFor({ timeout: 10000 }).catch(() => {});
+      await zoomReset(page);
+      await zoomTo(page, page.getByText(/ai call initiated/i).first(), 1.15, 800).catch(() => {});
+      await waitUntil(at('no scheduling', D - 2));
+      await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
+
+  // ── S9: The proof — transcript + AI summary OPENED on screen ─────────────────
+  {
+    name: 's9-transcript', account: ACCT.recruiter,
+    narration: "And when that call ends, it comes back readable. Full transcript on the left. The AI's read on the right: interest high, expecting twelve lakhs, thirty days' notice — next step, send the offer. Quality score: eighty-two. Nobody re-listens to recordings. Nobody writes a note. The first screen is simply done.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' });
+      await page.getByText('Priya').first().waitFor({ timeout: 20000 });
+      const waitUntil = await ready(800);
+      const callTab = page.getByRole('tab', { name: 'Call History' });
+      await callTab.waitFor({ timeout: 8000 }).catch(() => {});
+      await clickLocator(page, callTab, { dur: 500 }).catch(() => callTab.click().catch(() => {}));
+      await waitLoaded(page, 800);
+      // Open the AI analysis panel on the screening call
+      await openAiSummary(page);
+      await waitUntil(at('full transcript', 6, -0.4));
+      await zoomTo(page, page.getByText(/^transcript$/i).first(), 1.1, 900).catch(() => {});
+      await waitUntil(at("the ai's read", 10, -0.2));
+      await zoomReset(page);
+      await zoomTo(page, page.getByText(/ai analysis/i).first(), 1.12, 900).catch(() => {});
+      await waitUntil(at('eighty-two', D - 5));
+      await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
+
+  // ── S10: Follow-through — offer out from one screen ──────────────────────────
+  {
+    name: 's10-followup', account: ACCT.recruiter,
+    narration: "The offer goes out the same hour, from the same screen. A WhatsApp confirming her details. The formal offer letter by email — branded, personalized, tracked. Every touchpoint lands on her timeline, time-stamped. Nothing is left to anyone's memory.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' });
+      await page.getByText('Priya').first().waitFor({ timeout: 20000 });
+      const waitUntil = await ready(800);
+      const wa = page.getByRole('button', { name: /whatsapp/i }).first();
+      await waitUntil(at('a whatsapp', 6, -0.5));
+      await clickLocator(page, wa, { dur: 600 }).catch(() => {});
+      await page.waitForTimeout(2200); await page.keyboard.press('Escape').catch(() => {});
+      const em = page.getByRole('button', { name: /email/i }).first();
+      await waitUntil(at('formal offer letter', D - 8));
+      await clickLocator(page, em, { dur: 600 }).catch(() => {});
+      await page.waitForTimeout(2600); await page.keyboard.press('Escape').catch(() => {});
+      await waitUntil(at('time-stamped', D - 1.5));
+      await waitUntil(D);
+    },
+  },
+
+  // ── S11: Stage move — one click on the profile, matching the words ───────────
+  {
+    name: 's11-stage', account: ACCT.recruiter,
+    narration: "Moving her forward is one click, right on the profile. Interview… to Offer. The badge updates, the change is logged, and the whole team sees where she stands — without asking anyone.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' });
+      await page.getByText('Priya').first().waitFor({ timeout: 20000 });
+      await waitLoaded(page);
+      const waitUntil = await ready(900);
+      await waitUntil(at('one click', 3, -0.3));
+      const stageSel = page.getByRole('combobox', { name: /move stage/i }).first();
+      await clickLocator(page, stageSel, { dur: 600 }).catch(() => stageSel.click().catch(() => {}));
+      await page.waitForTimeout(700);
+      await page.getByRole('option', { name: 'Offer' }).click({ timeout: 4000 }).catch(() => {});
+      await page.getByText(/stage updated to offer/i).first().waitFor({ timeout: 5000 }).catch(() => {});
+      await waitUntil(at('the badge updates', D - 4));
+      await zoomTo(page, page.getByText('Priya Sharma', { exact: false }).first(), 1.15, 800).catch(() => {});
+      await waitUntil(at('without asking', D - 1));
+      await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
+
+  // ── S12: TENSION — she goes quiet; the system catches it ─────────────────────
+  {
+    name: 's12-tension', account: ACCT.recruiter,
+    narration: "Then… the part every recruiter dreads. The offer is out — and Priya goes quiet. Days pass. This silence is exactly where most hires die. Not here. Her follow-up is already flagged on Aarav's desk, and the AI agent redials her before anything slips. Minutes later, it's back in writing: joining confirmed, counter-offer declined. The save happened on time — because the system was keeping watch, not somebody's memory.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(`${BASE}/my-desk`, { waitUntil: 'networkidle' });
+      await page.getByText(/my desk|action today/i).first().waitFor({ timeout: 20000 });
+      await waitLoaded(page);
+      const waitUntil = await ready(900);
+      await waitUntil(at('goes quiet', 6, -0.3));
+      await page.getByText('Priya Sharma').first().scrollIntoViewIfNeeded().catch(() => {});
+      await zoomTo(page, page.getByText('Priya Sharma').first(), 1.18, 900).catch(() => {});
+      await waitUntil(at('already flagged', D - 16, -0.2));
+      await zoomReset(page);
+      // The AI redial happens now — the confirmation call lands in her history live.
+      await logConfirmationCall();
+      await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' }).catch(() => {});
+      await page.getByText('Priya').first().waitFor({ timeout: 20000 }).catch(() => {});
+      const callTab = page.getByRole('tab', { name: 'Call History' });
+      await callTab.waitFor({ timeout: 8000 }).catch(() => {});
+      await clickLocator(page, callTab, { dur: 500 }).catch(() => callTab.click().catch(() => {}));
+      await waitLoaded(page, 700);
+      await openAiSummary(page);
+      await page.getByText(/joining confirmed/i).first().waitFor({ timeout: 6000 }).catch(() => {});
+      // Keep-alive hold: something in the app intermittently collapses the panel
+      // mid-recording — check every second and re-open instantly so it stays on
+      // screen for the whole beat.
+      const tIn = at('in writing', D - 7, -0.3);
+      const tKeep = at('keeping watch', D - 1.2);
+      for (let t = Math.min(tIn, tKeep); t < tKeep; t += 1) {
+        await waitUntil(t);
+        if (!(await page.getByText('AI Analysis').first().isVisible().catch(() => false))) {
+          console.log('  [s12] panel collapsed — re-opening');
+          await openAiSummary(page);
+        }
+      }
+      await zoomTo(page, page.getByText(/ai analysis/i).first(), 1.12, 900).catch(() => {});
+      await waitUntil(tKeep);
+      await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
+
+  // ── S13: Close it out — onboarding + AI document verify ──────────────────────
+  {
+    name: 's13-onboarding', account: ACCT.admin,
+    narration: "'Yes' still isn't 'joined' until the paperwork clears. Priya uploads her PAN, Aadhaar, and bank details once. The AI verifies every document — formats, consistency, fraud signals — and recommends approval. One click, and she's officially onboarded. Requirement opened, hire closed, record complete.",
     beats: async ({ page, at, D, ready }) => {
       await page.goto(`${BASE}/hr-onboarding`, { waitUntil: 'networkidle' });
       await page.getByText(/onboarding/i).first().waitFor({ timeout: 20000 });
+      await waitLoaded(page);
       const waitUntil = await ready(1000);
-
-      const cap = await caption(page, 'HR Onboarding — paperless, AI-reviewed');
-      await waitUntil(at('onboarding link', 5, -0.3));
-
-      // Ring the "Copy Link" / share area
-      const linkBtn = page.getByRole('button', { name: /copy link/i }).first()
-        .or(page.getByText(/link/i).first());
-      const rLink = await ring(page, linkBtn, { label: 'Share onboarding link' }).catch(() => null);
-      await waitUntil(at('personal details', 9, -0.2));
-      if (rLink) await removeAnn(page, rLink);
-
-      // Navigate to public form to show candidate-side
-      await waitUntil(at('PAN card', 11, -0.3));
-      const joinUrlStr = formSlug ? joinUrl(formSlug) : `${BASE}/join/demo`;
-      await page.goto(joinUrlStr, { waitUntil: 'networkidle' });
-      await page.getByText(/personal/i).first().waitFor({ timeout: 15000 }).catch(() => {});
-      await removeCaption(page, cap);
-      const cap2 = await caption(page, 'Candidate fills form on mobile or browser');
-      await page.waitForTimeout(500);
-
-      // Highlight document upload section
-      await waitUntil(at('bank documents', 14, -0.3));
-      const docSection = page.getByText(/pan/i).first().or(page.getByText(/document/i).first());
-      const rDoc = await ring(page, docSection, { label: 'Document upload' }).catch(() => null);
-      await waitUntil(at('risk before HR', 18, -0.2));
-      if (rDoc) await removeAnn(page, rDoc);
-      await removeCaption(page, cap2);
-
-      // Back to HR admin to show review + approve
-      await page.goto(`${BASE}/hr-onboarding`, { waitUntil: 'networkidle' });
-      await page.waitForTimeout(600);
-      const cap3 = await caption(page, 'AI risk review + HR approval');
-      await waitUntil(at('AI findings', 22, -0.3));
-
-      // Click on Priya's submission row
-      const priyaRow = page.getByText('Priya Sharma').first();
-      const rRow = await ring(page, priyaRow, { label: 'Priya Sharma — Under Review' }).catch(() => null);
-      await clickLocator(page, priyaRow, { dur: 600 }).catch(() => {});
-      await page.waitForTimeout(800);
-      if (rRow) await removeAnn(page, rRow);
-
-      // Highlight approve button
-      const approveBtn = page.getByRole('button', { name: /approve/i }).first();
-      const rApprove = await ring(page, approveBtn, { label: 'Approve with one click' }).catch(() => null);
-      await waitUntil(at('single click', 26, -0.3));
-      if (rApprove) await removeAnn(page, rApprove);
-
-      await removeCaption(page, cap3);
-      const cap4 = await caption(page, 'Status: Onboarded — record complete');
-      await waitUntil(at('candidate record is complete', D - 1.5));
-      await removeCaption(page, cap4);
+      await waitUntil(at('paperwork clears', 4, -0.3));
+      const eye = page.getByRole('button', { name: /view details/i }).first();
+      await clickLocator(page, eye, { dur: 600 }).catch(() => eye.click().catch(() => {}));
+      await page.waitForTimeout(1300);
+      await waitLoaded(page, 500);
+      await waitUntil(at('verifies every document', D - 8));
+      await zoomTo(page, page.getByText(/risk score|recommend/i).first(), 1.1, 800).catch(() => {});
+      await waitUntil(at('one click', D - 4.5));
+      await zoomReset(page);
+      const ap = page.getByRole('button', { name: /approve/i }).first();
+      await ap.scrollIntoViewIfNeeded().catch(() => {});
+      await clickLocator(page, ap, { dur: 700 }).catch(() => ap.click().catch(() => {}));
+      await page.waitForTimeout(1000);
+      await waitUntil(at('record complete', D - 1));
       await waitUntil(D);
     },
   },
 
-  // ── S8: Close — back to dashboard ───────────────────────────────────────────
+  // ── S14: Zoom out — management ROI on live numbers ────────────────────────────
   {
-    name: 's8-close',
-    account: ACCT.admin,
-    narration: 'From a referral link to a verified, onboarded hire. Every step tracked, every call recorded, every document verified, every follow-up logged. No candidate lost to silence. No recruiter flying blind. This is how In-Sync ATS turns a leaky pipeline into a closed one.',
+    name: 's14-performance', account: ACCT.admin,
+    narration: "That's one hire. Multiply it across the team, and the same data answers the question managers actually ask: what are we getting back? Calls made, connect rate, offers out, and who actually joined — per recruiter, live, no status meeting required. Follow-through stops being guesswork and becomes a number.",
     beats: async ({ page, at, D, ready }) => {
-      await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' });
-      await page.getByText('Dashboard').first().waitFor({ timeout: 20000 });
+      await page.goto(`${BASE}/recruiter-performance`, { waitUntil: 'networkidle' });
+      await page.getByText(/performance|recruiter/i).first().waitFor({ timeout: 20000 });
+      await waitLoaded(page, 800);
       const waitUntil = await ready(1000);
-
-      const cap = await caption(page, 'From referral link to onboarded hire — fully tracked');
-      await waitUntil(at('onboarded hire', 5, -0.3));
-
-      const statsGrid = page.locator('.grid').first();
-      await zoomTo(page, statsGrid, 1.2, 900).catch(() => {});
-      await waitUntil(at('No recruiter', 11, -0.2));
+      await waitUntil(at('multiply it across the team', 5, -0.3));
+      await page.mouse.wheel(0, 220);
+      await page.waitForTimeout(500);
+      const t = page.locator('table').first().or(page.locator('.grid').nth(1));
+      await zoomTo(page, t, 1.12, 900).catch(() => {});
+      await waitUntil(at('becomes a number', D - 1.2));
       await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
 
-      await removeCaption(page, cap);
-      const cap2 = await caption(page, 'In-Sync ATS — insync.ai');
-      await waitUntil(at('closed one', D - 1.5));
-      await removeCaption(page, cap2);
+  // ── S15: Why In-Sync wins — differentiation ──────────────────────────────────
+  {
+    name: 's15-diff', account: ACCT.guest,
+    narration: "Most tools automate the front of the funnel — sourcing and screening. In-Sync ATS closes the back, where hires are actually lost. AI that makes the reminder calls, does the data entry, and verifies every document. End to end. Built for India. One platform.",
+    beats: async ({ page, D, ready }) => {
+      await page.setContent(DIFF_HTML, { waitUntil: 'load' });
+      const waitUntil = await ready(300);
+      await waitUntil(D);
+    },
+  },
+
+  // ── S16: CTA — close on numbers ──────────────────────────────────────────────
+  {
+    name: 's16-cta', account: ACCT.guest,
+    narration: "From a role opened in the morning to a hire confirmed in writing — with nobody lost to silence. Teams on In-Sync ATS move from shortlist to offer twice as fast, and cut offer drop-offs by forty percent. See it run on your own pipeline. Book a demo.",
+    beats: async ({ page, D, ready }) => {
+      await page.setContent(CTA_HTML, { waitUntil: 'load' });
+      const waitUntil = await ready(300);
       await waitUntil(D);
     },
   },

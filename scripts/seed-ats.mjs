@@ -34,17 +34,30 @@ const upsert = (p, b, conflict) => fetch(`${SB_URL}/rest/v1/${p}${conflict ? `?o
 const ORG_ID = '00000000-0000-0000-0000-000000000001';
 const DEMO_PASSWORD = 'AtsDemo#2026';
 
-// Date helper — produces ISO string in local time for June 2026
-function june(day, hour = 10, minute = 0) {
-  return new Date(2026, 5, day, hour, minute, 0).toISOString();
+// Date helpers — all activity is dated RELATIVE TO THE RECORDING DAY so that
+// "today" and "this month" KPIs are alive no matter when the video is re-shot.
+// demoDay(d) maps the old June-calendar day d (1..29) onto the last 30 days:
+// d=29 → yesterday, d=1 → 29 days ago.
+function daysAgo(n, hour = 10, minute = 0) {
+  const dt = new Date();
+  dt.setDate(dt.getDate() - n);
+  dt.setHours(hour, minute, 0, 0);
+  return dt.toISOString();
 }
+function demoDay(day, hour = 10, minute = 0) {
+  return daysAgo(30 - day, hour, minute);
+}
+// "Today" (recording day) in LOCAL time — .toISOString() alone gives the UTC
+// date, which is YESTERDAY when seeding late-night IST and turns every
+// next_call_date into an overdue red flag on My Desk.
+const TODAY = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 
 // ── 1. Org ───────────────────────────────────────────────────────────────────
 console.log('1. Updating org...');
 await fetch(`${SB_URL}/rest/v1/organizations?id=eq.${ORG_ID}`, {
   method: 'PATCH',
   headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-  body: JSON.stringify({ name: 'In-sync demo', slug: 'in-sync-demo' }),
+  body: JSON.stringify({ name: 'TechCorp Solutions', slug: 'techcorp', logo_url: 'https://ats-6t2.pages.dev/techcorp-logo.png' }),
 });
 
 // ── 2. Siddharth Roy (org admin) ─────────────────────────────────────────────
@@ -137,7 +150,7 @@ for (const md of MANDATE_DEFS) {
       employment_type: md.type, number_of_positions: md.pos, positions_filled: md.filled,
       profiles_submitted: md.submitted, min_experience_years: md.minExp, max_experience_years: md.maxExp,
       min_ctc_lakhs: md.minCtc, max_ctc_lakhs: md.maxCtc, mandatory_skills: md.skills,
-      minimum_qualification: md.qual, job_description: md.desc, priority_level: md.pri,
+      minimum_qualification: md.qual, job_description: md.desc, priority_level: md.pri.toLowerCase(),
       mandate_status: md.status, mandate_received_date: md.received, target_closure_date: md.closure,
       assigned_recruiter_id: md.rec, org_id: ORG_ID, created_by: ORG_ADMIN_ID,
     });
@@ -148,30 +161,43 @@ for (const md of MANDATE_DEFS) {
 const M = (t) => mandateIds[t];
 const mandateId = M('Senior Frontend Developer');
 const clientId  = C('TechCorp Solutions');
+// The hero mandate is "raised today": newest-first ordering puts it at the TOP
+// of the careers page and the mandate list, and its header reads today's date.
+await patch(`mandates?id=eq.${mandateId}`, {
+  created_at: daysAgo(0, 9), mandate_received_date: TODAY,
+  target_closure_date: daysAgo(-21, 9).slice(0, 10),
+});
 
 // ── 6. Priya Sharma (main hero candidate) ────────────────────────────────────
 console.log('6. Priya Sharma...');
 const ex6 = await get(`candidates?email=eq.priya.sharma.demo%40gmail.com&org_id=eq.${ORG_ID}&select=id`);
 let candidateId;
+const PRIYA_FIELDS = {
+  interview_stage: 'Interview', current_status: 'applied', is_onboarded: false,
+  assigned_recruiter: null, next_call_date: TODAY,
+  position_applied_for: 'Senior Frontend Developer', notice_period_days: 30,
+  current_ctc_lakhs: 8.0, expected_ctc_lakhs: 12.0,
+  designation: 'Frontend Developer', current_company: 'Zenlabs Software',
+  total_experience_years: 5.5, rating: 4,
+  current_location: 'Bangalore', location: 'Bangalore', city: 'Bangalore', state: 'Karnataka',
+  highest_qualification: 'B.Tech Computer Science',
+  key_skills: 'React, TypeScript, Node.js, Redux, GraphQL',
+  source: 'Referral',
+};
 if (ex6?.length) {
   candidateId = ex6[0].id;
   await patch(`candidates?id=eq.${candidateId}`, {
-    interview_stage: 'Interview', current_status: 'applied', is_onboarded: false,
-    assigned_recruiter: ORG_ADMIN_ID, next_call_date: '2026-06-29',
-    position_applied_for: 'Senior Frontend Developer', notice_period_days: 30,
-    current_ctc_lakhs: 8.0, expected_ctc_lakhs: 12.0,
+    ...PRIYA_FIELDS,
+    assigned_recruiter: AARAV_ID, source_recruiter_id: AARAV_ID,
   });
   console.log(`   refreshed ${candidateId}`);
 } else {
   const r = await post('candidates', {
     first_name: 'Priya', last_name: 'Sharma', email: 'priya.sharma.demo@gmail.com', phone: '9876543210',
-    designation: 'Frontend Developer', current_ctc_lakhs: 8.0, expected_ctc_lakhs: 12.0,
-    interview_stage: 'Interview', current_status: 'applied', source: 'Referral',
-    location: 'Bangalore', city: 'Bangalore', state: 'Karnataka',
-    notice_period_days: 30, position_applied_for: 'Senior Frontend Developer',
-    next_call_date: '2026-06-29',
-    org_id: ORG_ID, assigned_recruiter: ORG_ADMIN_ID, created_by: ORG_ADMIN_ID, is_onboarded: false,
-    created_at: june(14, 11),
+    ...PRIYA_FIELDS,
+    org_id: ORG_ID, assigned_recruiter: AARAV_ID, source_recruiter_id: AARAV_ID,
+    created_by: ORG_ADMIN_ID,
+    created_at: daysAgo(6, 11),
   });
   candidateId = r[0].id;
   console.log(`   created ${candidateId}`);
@@ -181,7 +207,7 @@ if (ex6?.length) {
 console.log('7. AI score...');
 await upsert('candidate_ai_scores', {
   candidate_id: candidateId, org_id: ORG_ID, score: 61, category: 'promising',
-  breakdown: { interview_stage: 23, call_engagement: 15, profile_completeness: 16, application_quality: 7 },
+  breakdown: { 'Interview Stage': 23, 'Call Engagement': 15, 'Profile Completeness': 16, 'Application Quality': 7 },
   reasoning: 'Candidate has progressed to interview stage with a solid profile and referral-sourced application indicating genuine interest. Call engagement is positive and skills align well to the mandate.',
   scored_at: new Date().toISOString(),
 }, 'candidate_id');
@@ -209,38 +235,75 @@ Agent: The role is hybrid from Bangalore. Is that comfortable?
 Priya: Yes absolutely, I'm based in Bangalore.
 Agent: Excellent. We'll share the offer details by email shortly. Thank you Priya.
 Priya: Thank you, looking forward to it.`;
+// Screening call = 2 days before recording; a manual first-touch call by Aarav
+// the day before that. IMPORTANT: any confirmation call from a previous take is
+// deleted so the tension scene can re-create it live during recording.
+await rest('DELETE', `call_logs?demandcom_id=eq.${candidateId}&bolna_execution_id=eq.demo-confirm-${candidateId.slice(0,8)}`);
+const bolnaFields = {
+  status: 'completed', conversation_duration: 305, transcript, analysis_json: callAnalysis,
+  analysis_quality_score: 82, initiated_by: AARAV_ID, disposition: 'Connected',
+  start_time: daysAgo(2, 15), end_time: daysAgo(2, 15, 5), created_at: daysAgo(2, 15),
+};
 if (ex8?.length) {
-  await patch(`call_logs?id=eq.${ex8[0].id}`, { status: 'completed', conversation_duration: 305, transcript, analysis_json: callAnalysis, analysis_quality_score: 82, initiated_by: ORG_ADMIN_ID });
+  await patch(`call_logs?id=eq.${ex8[0].id}`, bolnaFields);
 } else {
   await post('call_logs', {
     demandcom_id: candidateId, org_id: ORG_ID, from_number: 'bolna-ai', to_number: '9876543210',
-    status: 'completed', direction: 'outbound-api', call_method: 'bolna',
+    direction: 'outbound-api', call_method: 'bolna',
     bolna_execution_id: `demo-exec-${candidateId.slice(0,8)}`,
-    conversation_duration: 305, transcript, analysis_json: callAnalysis, analysis_quality_score: 82,
-    start_time: june(28, 15), end_time: june(28, 15, 5), initiated_by: ORG_ADMIN_ID,
-    created_at: june(28, 15),
+    ...bolnaFields,
+  });
+}
+// Manual first-touch call by Aarav (assessment conversation), 3 days ago
+const exManual = await get(`call_logs?demandcom_id=eq.${candidateId}&call_method=eq.phone&select=id`);
+const manualFields = {
+  status: 'completed', conversation_duration: 260, disposition: 'Connected',
+  subdisposition: 'Interested', initiated_by: AARAV_ID,
+  start_time: daysAgo(3, 12, 10), end_time: daysAgo(3, 12, 14), created_at: daysAgo(3, 12, 10),
+};
+if (exManual?.length) {
+  await patch(`call_logs?id=eq.${exManual[0].id}`, manualFields);
+} else {
+  await post('call_logs', {
+    demandcom_id: candidateId, org_id: ORG_ID, from_number: '08039591920', to_number: '9876543210',
+    direction: 'outbound-api', call_method: 'phone', call_sid: `demo-priya-manual`,
+    ...manualFields,
   });
 }
 
 // ── 9. Siddharth's desk candidates (7 more alongside Priya) ─────────────────
 console.log('9. Siddharth desk candidates...');
 const DESK_CANDIDATES = [
-  { fn: 'Kavya',  ln: 'Nair',    phone: '9871000001', desig: 'React Developer',         cur: 7,  exp: 11, stage: 'Interview',   src: 'LinkedIn',           pos: 'Senior Frontend Developer', next: '2026-06-29', day: 16 },
-  { fn: 'Rohan',  ln: 'Mehta',   phone: '9871000002', desig: 'Software Engineer',        cur: 5,  exp: 9,  stage: 'Screening',   src: 'Naukri',             pos: 'Full Stack Developer',       next: '2026-06-29', day: 20 },
+  { fn: 'Kavya',  ln: 'Nair',    phone: '9871000001', desig: 'React Developer',         cur: 7,  exp: 11, stage: 'Interview',   src: 'LinkedIn',           pos: 'Senior Frontend Developer', next: TODAY, day: 16 },
+  { fn: 'Rohan',  ln: 'Mehta',   phone: '9871000002', desig: 'Software Engineer',        cur: 5,  exp: 9,  stage: 'Screening',   src: 'Naukri',             pos: 'Full Stack Developer',       next: TODAY, day: 20 },
   { fn: 'Arjun',  ln: 'Sethi',   phone: '9871000003', desig: 'Tech Lead',                cur: 10, exp: 16, stage: 'Interview',   src: 'LinkedIn',           pos: 'Python Data Scientist',      next: null,         day: 18, email: 'arjun.sethi.sid@ats-demo.in' },
   { fn: 'Sunita', ln: 'Menon',   phone: '9871000004', desig: 'Product Manager',          cur: 12, exp: 18, stage: 'Offer',       src: 'Referral',           pos: 'Senior Frontend Developer',  next: null,         day: 10, email: 'sunita.menon.sid@ats-demo.in' },
   { fn: 'Anisha', ln: 'Gupta',   phone: '9871000005', desig: 'UI Designer',              cur: 6,  exp: 10, stage: 'Offer',       src: 'LinkedIn',           pos: 'UI/UX Designer',             next: null,         day: 22 },
   { fn: 'Ravi',   ln: 'Bose',    phone: '9871000006', desig: 'Backend Developer',        cur: 7,  exp: 11, stage: 'Shortlisted', src: 'Job Portal',         pos: 'DevOps / Cloud Engineer',    next: null,         day: 24, email: 'ravi.bose.sid@ats-demo.in' },
   { fn: 'Tarun',  ln: 'Sharma',  phone: '9871000007', desig: 'Sales Head',               cur: 18, exp: 24, stage: 'Selected',    src: 'Employee Referral',  pos: 'Area Sales Manager',         next: null,         day: 8 },
 ];
+// Shared realism pools — company / location / rating / experience derived per candidate
+const COMPANY_POOL = ['Infosys', 'TCS', 'Wipro', 'HCLTech', 'Accenture', 'Cognizant', 'Zoho', 'Freshworks', 'Flipkart', 'Swiggy', 'Razorpay', 'PhonePe', 'Mindtree', 'Persistent Systems', 'Mphasis'];
+const LOCATION_POOL = ['Bangalore', 'Pune', 'Hyderabad', 'Mumbai', 'Chennai', 'Gurgaon', 'Noida', 'Bangalore', 'Pune', 'Hyderabad'];
+const RATING_POOL = [4, 3, 5, 4, 3, 4, 5, 3, 4, 4];
+const expFromCtc = (ctcLakhs) => Math.min(20, Math.max(1, Math.round(ctcLakhs * 0.7)));
+const enrichAt = (i, ctc) => ({
+  current_company: COMPANY_POOL[i % COMPANY_POOL.length],
+  current_location: LOCATION_POOL[i % LOCATION_POOL.length],
+  rating: RATING_POOL[i % RATING_POOL.length],
+  total_experience_years: expFromCtc(ctc),
+});
+
 const deskIds = [candidateId];
-for (const d of DESK_CANDIDATES) {
+for (let di = 0; di < DESK_CANDIDATES.length; di++) {
+  const d = DESK_CANDIDATES[di];
   const emailKey = d.email || `${d.fn.toLowerCase()}.${d.ln.toLowerCase()}.sid@ats-demo.in`;
   const ex = await get(`candidates?email=eq.${encodeURIComponent(emailKey)}&org_id=eq.${ORG_ID}&select=id`);
+  const enrich = { ...enrichAt(di, d.cur), source_recruiter_id: ORG_ADMIN_ID };
   let cid;
   if (ex?.length) {
     cid = ex[0].id;
-    await patch(`candidates?id=eq.${cid}`, { interview_stage: d.stage, assigned_recruiter: ORG_ADMIN_ID, next_call_date: d.next, position_applied_for: d.pos });
+    await patch(`candidates?id=eq.${cid}`, { interview_stage: d.stage, assigned_recruiter: ORG_ADMIN_ID, next_call_date: d.next, position_applied_for: d.pos, ...enrich });
   } else {
     const r = await post('candidates', {
       first_name: d.fn, last_name: d.ln, email: emailKey, phone: d.phone,
@@ -248,7 +311,7 @@ for (const d of DESK_CANDIDATES) {
       interview_stage: d.stage, current_status: 'applied', source: d.src,
       position_applied_for: d.pos, next_call_date: d.next, notice_period_days: 30,
       org_id: ORG_ID, assigned_recruiter: ORG_ADMIN_ID, created_by: ORG_ADMIN_ID,
-      created_at: june(d.day, 11),
+      created_at: demoDay(d.day, 11), ...enrich,
     });
     cid = r[0].id;
   }
@@ -275,7 +338,7 @@ const BULK = [
   ['Saurabh',   'Kumar',    'saurabh.kumar.aarav',   '9880100012', 'DevOps Engineer',       11, 17, 'Shortlisted', 'LinkedIn',          'DevOps / Cloud Engineer',    30, AARAV_ID,  13, false],
   ['Ritu',      'Bansal',   'ritu.bansal.aarav',     '9880100013', 'Sales Manager',         12, 18, 'Interview',   'Walk-in',           'Area Sales Manager',         30, AARAV_ID,  14, false],
   ['Mohan',     'Iyer',     'mohan.iyer.aarav',      '9880100014', 'Frontend Developer',    10, 16, 'Offer',       'Employee Referral', 'Senior Frontend Developer',  60, AARAV_ID,  15, false],
-  ['Deepika',   'Patel',    'deepika.patel.aarav',   '9880100015', 'Credit Analyst',        11, 18, 'Selected',    'LinkedIn',          'Credit Risk Analyst',        30, AARAV_ID,  16, false],
+  ['Deepika',   'Patel',    'deepika.patel.aarav',   '9880100015', 'Credit Analyst',        11, 18, 'Selected',    'LinkedIn',          'Credit Risk Analyst',        30, AARAV_ID,  16, true ],
   ['Ajay',      'Sharma',   'ajay.sharma.aarav',     '9880100016', 'Operations Manager',    20, 30, 'Screening',   'Referral',          'Operations Head',            45, AARAV_ID,  17, false],
   ['Swathi',    'Reddy',    'swathi.reddy.aarav',    '9880100017', 'Supply Chain Analyst',  6,  10, 'Shortlisted', 'LinkedIn',          'Supply Chain Analyst',       60, AARAV_ID,  18, false],
   ['Nikhil',    'Bose',     'nikhil.bose.aarav',     '9880100018', 'Full Stack Developer',  8,  13, 'Interview',   'Job Portal',        'Full Stack Developer',       30, AARAV_ID,  19, false],
@@ -310,26 +373,46 @@ const BULK = [
   ['Yamini',    'Reddy',    'yamini.reddy.divya',    '9880300010', 'Frontend Developer',    8,  13, 'Interview',   'LinkedIn',          'Senior Frontend Developer',  30, DIVYA_ID,  16, false],
 ];
 
+// 10a. Remove LEGACY junk candidates from older seeds (the "Not Specified" rows
+// with no experience/rating that sat on top of the Candidates list on video).
+console.log('10a. Removing legacy candidates...');
+const legacy = await get(`candidates?org_id=eq.${ORG_ID}&email=like.*.demo%40ats-demo.in&select=id`) || [];
+if (legacy.length) {
+  const ids = legacy.map(c => c.id).join(',');
+  await rest('DELETE', `call_logs?demandcom_id=in.(${ids})`);
+  await rest('DELETE', `mandate_candidates?candidate_id=in.(${ids})`);
+  await rest('DELETE', `candidate_ai_scores?candidate_id=in.(${ids})`);
+  await rest('DELETE', `candidate_resumes?candidate_id=in.(${ids})`).catch(() => {});
+  await rest('DELETE', `candidates?id=in.(${ids})`);
+  console.log(`   deleted ${legacy.length} legacy candidates`);
+}
+
 // Fetch existing candidates by email prefix to avoid re-creating
 const allCandidateEmails = new Set(
   (await get(`candidates?org_id=eq.${ORG_ID}&select=email&limit=500`) || []).map(c => c.email)
 );
 const bulkCandidateIds = [];
+let aaravToday = 0; // schedule a few of Aarav's candidates for TODAY so his My Desk "Action Today" is live
+let bi = 0;
 for (const [fn, ln, emailSlug, phone, desig, cur, exp, stage, src, pos, notice, recId, day, hired] of BULK) {
   const email = `${emailSlug}@ats-demo.in`;
+  let nextCall = null;
+  if (recId === AARAV_ID && aaravToday < 4) { nextCall = TODAY; aaravToday++; }
+  const enrich = { ...enrichAt(bi + 3, cur), source_recruiter_id: recId };
+  bi++;
   let cid;
   if (allCandidateEmails.has(email)) {
     const ex = await get(`candidates?email=eq.${encodeURIComponent(email)}&org_id=eq.${ORG_ID}&select=id`);
     cid = ex[0].id;
-    await patch(`candidates?id=eq.${cid}`, { interview_stage: stage, assigned_recruiter: recId, current_status: hired ? 'hired' : 'applied' });
+    await patch(`candidates?id=eq.${cid}`, { interview_stage: stage, assigned_recruiter: recId, current_status: hired ? 'hired' : 'applied', next_call_date: nextCall, ...enrich });
   } else {
     const r = await post('candidates', {
       first_name: fn, last_name: ln, email, phone,
       designation: desig, current_ctc_lakhs: cur, expected_ctc_lakhs: exp,
       interview_stage: stage, current_status: hired ? 'hired' : 'applied',
       source: src, position_applied_for: pos, notice_period_days: notice,
-      org_id: ORG_ID, assigned_recruiter: recId, created_by: recId,
-      created_at: june(day, 10 + (bulkCandidateIds.length % 6)),
+      org_id: ORG_ID, assigned_recruiter: recId, created_by: recId, next_call_date: nextCall,
+      created_at: demoDay(day, 10 + (bulkCandidateIds.length % 6)), ...enrich,
     });
     cid = r[0].id;
   }
@@ -337,8 +420,11 @@ for (const [fn, ln, emailSlug, phone, desig, cur, exp, stage, src, pos, notice, 
 }
 console.log(`   ${bulkCandidateIds.length} bulk candidates`);
 
-// ── 11. Call logs — historical spread across June 2026 ────────────────────────
+// ── 11. Call logs — historical spread over the last 30 days ──────────────────
 console.log('11. Call logs...');
+// Old takes seeded calls on fixed June dates; wipe demo phone logs (keep Priya's)
+// and regenerate relative to the recording day so month/today KPIs are alive.
+await rest('DELETE', `call_logs?org_id=eq.${ORG_ID}&call_method=eq.phone&call_sid=like.demo-*&demandcom_id=neq.${candidateId}`);
 // Fetch existing call pairs for dedup
 const existingPairs = new Set(
   (await get(`call_logs?org_id=eq.${ORG_ID}&select=demandcom_id,initiated_by&limit=3000`) || [])
@@ -364,10 +450,17 @@ const DIVYA_SCHEDULE = [
   [23,27,29],[24,27,28],[25,27,29],[26,28,29],[27,28,29],
 ];
 
+const SUBDISPOSITIONS = ['Interested', 'Follow-up Scheduled', 'Details Shared', 'Considering Offer'];
+let dispSeq = 0;
 async function addCall(cid, recId, day, hour = 10, minute = 0, connected = true) {
-  if (existingPairs.has(`${cid}:${recId}`)) return;
-  const st = june(day, hour, minute);
+  if (existingPairs.has(`${cid}:${recId}:${day}:${hour}`)) return;
+  const st = demoDay(day, hour, minute);
   const dur = connected ? 90 + Math.floor(Math.random() * 180) : 0;
+  // ~85% of calls carry a logged outcome; the rest stay pending (realistic desk)
+  const hasDisposition = dispSeq++ % 7 !== 6;
+  const disposition = !hasDisposition ? null : connected
+    ? (dispSeq % 9 === 0 ? 'Callback Requested' : 'Connected')
+    : (dispSeq % 5 === 0 ? 'Not Interested' : 'Not Reachable');
   await post('call_logs', {
     demandcom_id: cid, org_id: ORG_ID,
     from_number: '08039591920', to_number: `977${String(10000000 + day * 100 + hour).slice(1)}`,
@@ -375,11 +468,13 @@ async function addCall(cid, recId, day, hour = 10, minute = 0, connected = true)
     direction: 'outbound-api', call_method: 'phone',
     call_sid: `demo-${cid.slice(0,6)}-${day}-${hour}`,
     conversation_duration: dur,
-    start_time: st, end_time: connected ? june(day, hour, minute + Math.floor(dur/60)) : st,
+    disposition,
+    subdisposition: disposition === 'Connected' ? SUBDISPOSITIONS[dispSeq % SUBDISPOSITIONS.length] : null,
+    start_time: st, end_time: connected ? demoDay(day, hour, minute + Math.floor(dur/60)) : st,
     initiated_by: recId,
     created_at: st,
   });
-  existingPairs.add(`${cid}:${recId}`);
+  existingPairs.add(`${cid}:${recId}:${day}:${hour}`);
 }
 
 const aaravCandidates = bulkCandidateIds.filter(b => b.recId === AARAV_ID);
@@ -387,11 +482,13 @@ const nehaCandidates  = bulkCandidateIds.filter(b => b.recId === NEHA_ID);
 const divyaCandidates = bulkCandidateIds.filter(b => b.recId === DIVYA_ID);
 
 let callCount = 0;
+// Last scheduled call of every second candidate is a no-answer → overall
+// connection rate lands ~70-75% instead of an implausible 100%.
 for (let i = 0; i < aaravCandidates.length; i++) {
   const days = AARAV_SCHEDULE[i] || [15, 22, 27];
   const hours = [9, 11, 14, 16];
   for (let j = 0; j < days.length; j++) {
-    await addCall(aaravCandidates[i].cid, AARAV_ID, days[j], hours[j % 4], j * 7, j < days.length - 1);
+    await addCall(aaravCandidates[i].cid, AARAV_ID, days[j], hours[j % 4], j * 7, j < days.length - 1 || i % 2 === 0);
     callCount++;
   }
 }
@@ -399,7 +496,7 @@ for (let i = 0; i < nehaCandidates.length; i++) {
   const days = NEHA_SCHEDULE[i] || [18, 24, 28];
   const hours = [10, 13, 15];
   for (let j = 0; j < days.length; j++) {
-    await addCall(nehaCandidates[i].cid, NEHA_ID, days[j], hours[j % 3], j * 5, j < days.length - 1);
+    await addCall(nehaCandidates[i].cid, NEHA_ID, days[j], hours[j % 3], j * 5, j < days.length - 1 || i % 2 === 1);
     callCount++;
   }
 }
@@ -407,15 +504,44 @@ for (let i = 0; i < divyaCandidates.length; i++) {
   const days = DIVYA_SCHEDULE[i] || [22, 27];
   const hours = [9, 14, 16];
   for (let j = 0; j < days.length; j++) {
-    await addCall(divyaCandidates[i].cid, DIVYA_ID, days[j], hours[j % 3], j * 10, j < days.length - 1);
+    await addCall(divyaCandidates[i].cid, DIVYA_ID, days[j], hours[j % 3], j * 10, j < days.length - 1 || i % 2 === 0);
     callCount++;
   }
 }
-// Extra today calls (June 29) so Calling Dashboard KPI shows activity
-const todayCandidates = [...aaravCandidates.slice(0,3), ...nehaCandidates.slice(0,2), ...divyaCandidates.slice(0,1)];
-const todayRecs       = [AARAV_ID, AARAV_ID, AARAV_ID, NEHA_ID, NEHA_ID, DIVYA_ID];
-for (let i = 0; i < todayCandidates.length; i++) {
-  await addCall(todayCandidates[i].cid, todayRecs[i], 29, 9 + i, 30, true);
+// TODAY's calls (the actual recording day, morning hours) so the Calling
+// Dashboard KPIs are live: ~13 calls, ~70% connected, dispositions logged.
+const TODAY_PLAN = [
+  // [pool, poolIdx, recId, hour, min, connected, disposition, subdisposition]
+  [aaravCandidates, 0, AARAV_ID, 9, 5,  true,  'Connected', 'Interested'],
+  [aaravCandidates, 1, AARAV_ID, 9, 25, true,  'Connected', 'Follow-up Scheduled'],
+  [aaravCandidates, 2, AARAV_ID, 9, 50, false, 'Not Reachable', null],
+  [aaravCandidates, 3, AARAV_ID, 10, 10, true,  'Connected', 'Details Shared'],
+  [aaravCandidates, 4, AARAV_ID, 10, 35, true,  'Callback Requested', null],
+  [aaravCandidates, 5, AARAV_ID, 11, 0,  false, 'Not Reachable', null],
+  [nehaCandidates,  0, NEHA_ID,  9, 15, true,  'Connected', 'Interested'],
+  [nehaCandidates,  1, NEHA_ID,  9, 45, true,  'Connected', 'Considering Offer'],
+  [nehaCandidates,  2, NEHA_ID,  10, 20, false, 'Not Interested', null],
+  [nehaCandidates,  3, NEHA_ID,  11, 5,  true,  'Connected', 'Follow-up Scheduled'],
+  [divyaCandidates, 0, DIVYA_ID, 9, 35, true,  'Connected', 'Interested'],
+  [divyaCandidates, 1, DIVYA_ID, 10, 45, true,  'Callback Requested', null],
+  [divyaCandidates, 2, DIVYA_ID, 11, 30, null,  null, null], // pending disposition
+];
+for (const [pool, idx, recId, hour, min, connected, disposition, subdisposition] of TODAY_PLAN) {
+  const c = pool[idx];
+  if (!c) continue;
+  const isConn = connected !== false;
+  const dur = isConn ? 100 + ((hour * 60 + min) % 160) : 0;
+  const st = daysAgo(0, hour, min);
+  await post('call_logs', {
+    demandcom_id: c.cid, org_id: ORG_ID,
+    from_number: '08039591920', to_number: `988${String(10000000 + hour * 137 + min).slice(1)}`,
+    status: isConn ? 'completed' : 'no-answer',
+    direction: 'outbound-api', call_method: 'phone',
+    call_sid: `demo-today-${c.cid.slice(0,6)}-${hour}${min}`,
+    conversation_duration: dur, disposition, subdisposition,
+    start_time: st, end_time: isConn ? daysAgo(0, hour, min + Math.ceil(dur / 60)) : st,
+    initiated_by: recId, created_at: st,
+  });
   callCount++;
 }
 console.log(`   ${callCount} call logs created`);

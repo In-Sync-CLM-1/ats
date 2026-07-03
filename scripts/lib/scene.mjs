@@ -1,5 +1,6 @@
 // Scene runner for ATS walkthrough: login -> record video -> trim lead -> encode.
 import { chromium } from 'playwright';
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { loadEnv } from './env.mjs';
@@ -7,13 +8,18 @@ import * as V from './video.mjs';
 import { installCursor } from './cursor.mjs';
 import { login } from './app.mjs';
 
-const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'recordings', 'scenes');
+const here = dirname(fileURLToPath(import.meta.url));
+const outDir = join(here, '..', 'recordings', 'scenes');
 const env = loadEnv(new URL('../../.env', import.meta.url));
 const VP = { width: 1366, height: 768 };
+// White-label logo (TechCorp) injected into the app sidebar at record time.
+const SIDEBAR_LOGO = 'data:image/png;base64,' +
+  readFileSync(join(here, '..', '..', 'src', 'assets', 'techcorp-logo-white.png')).toString('base64');
 
 export const ACCT = {
-  admin: { email: env.ATS_ORG_ADMIN_EMAIL, password: env.ATS_ORG_ADMIN_PASSWORD },
-  guest: { guest: true },
+  admin:     { email: env.ATS_ORG_ADMIN_EMAIL,    password: env.ATS_ORG_ADMIN_PASSWORD },
+  recruiter: { email: env.ATS_RECRUITER_EMAIL,    password: env.ATS_RECRUITER_PASSWORD },
+  guest:     { guest: true },
 };
 
 // Continuous-narration mode: record VIDEO ONLY, paced to a slot of the single
@@ -36,6 +42,39 @@ export async function recordSceneVideo({ scene, slotStart, slotDuration, localFi
     locale: 'en-IN',
     recordVideo: { dir: outDir, size: VP },
   });
+  // Video-only sidebar treatment (no app change): white-label the logo (TechCorp),
+  // shrink it, hide the "Need help?" card, and COMPACT the nav so all ~19 items fit
+  // (fixes "menu looks zoomed, options not visible"). The <style> must land in <head>.
+  await ctx.addInitScript((logoSrc) => {
+    const CSS = `
+      [data-sidebar="header"]{padding:6px 8px!important}
+      [data-sidebar="header"] > div{padding:6px!important;background:transparent!important;backdrop-filter:none!important}
+      [data-sidebar="header"] img[alt="Logo"]{width:74%!important;height:auto!important;filter:none!important}
+      [data-sidebar="footer"]{padding:6px!important}
+      [data-sidebar="footer"] > div:first-child{display:none!important}
+      [data-sidebar="group"]{padding-top:2px!important;padding-bottom:2px!important}
+      [data-sidebar="group-label"]{height:20px!important;font-size:10px!important;margin:2px 0!important}
+      [data-sidebar="menu-button"],[data-sidebar="menu"] a,[data-sidebar="menu"] button{
+        padding-top:5px!important;padding-bottom:5px!important;min-height:0!important;height:auto!important;font-size:13px!important}
+      [data-sidebar="menu-item"]{margin:1px 0!important}
+      [data-sidebar="content"]{gap:2px!important;overflow:hidden!important}
+    `;
+    const style = () => {
+      if (document.getElementById('__sbfix')) return true;
+      if (!document.head) return false;
+      const s = document.createElement('style'); s.id = '__sbfix'; s.textContent = CSS;
+      document.head.appendChild(s); return true;
+    };
+    const swapLogo = () => {
+      const img = document.querySelector('img[alt="Logo"]');
+      if (img && img.src !== logoSrc) { img.src = logoSrc; }
+    };
+    const run = () => { style(); swapLogo(); };
+    run();
+    const iv = setInterval(run, 60);
+    setTimeout(() => clearInterval(iv), 6000);
+    document.addEventListener('DOMContentLoaded', run);
+  }, SIDEBAR_LOGO);
   const page = await ctx.newPage();
   let leadSec = 0, tBeats = 0;
   const t0 = Date.now();

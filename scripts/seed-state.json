@@ -1,7 +1,7 @@
 {
   "orgId": "00000000-0000-0000-0000-000000000001",
-  "adminProfileId": "f1b2411a-8336-47f1-a51d-9c8434516bc0",
-  "referralCode": "41bec8e0",
+  "orgAdminId": "e2d9683a-d69d-4f33-b7f5-c46ae91efd63",
+  "referralCode": "2f648768",
   "clientId": "4d58196b-36db-427d-a1e3-36038bc25a9a",
   "mandateId": "1b458cbd-1ce1-4dcd-9ee2-60b4c2e8411e",
   "candidateId": "f68704c9-10ac-40f4-959c-c90a94837667",
@@ -21,5 +21,5 @@
       "name": "Divya Rao"
     }
   ],
-  "seededAt": "2026-06-28T18:30:25.739Z"
+  "seededAt": "2026-07-03T19:40:39.873Z"
 }
