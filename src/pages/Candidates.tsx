@@ -888,13 +888,13 @@ const Candidates = () => {
                               <div className="flex items-center gap-1">
                                 <IndianRupee className="h-3 w-3 text-muted-foreground" />
                               <span className="text-sm">
-                                  {((candidate.current_ctc_lakhs ?? 0) / 100000).toFixed(1)}L → {((candidate.expected_ctc_lakhs ?? 0) / 100000).toFixed(1)}L
+                                  {(candidate.current_ctc_lakhs ?? 0).toFixed(1)}L → {(candidate.expected_ctc_lakhs ?? 0).toFixed(1)}L
                                 </span>
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Current: ₹{((candidate.current_ctc_lakhs ?? 0) / 100000).toFixed(2)}L</p>
-                              <p>Expected: ₹{((candidate.expected_ctc_lakhs ?? 0) / 100000).toFixed(2)}L</p>
+                              <p>Current: ₹{(candidate.current_ctc_lakhs ?? 0).toFixed(2)}L</p>
+                              <p>Expected: ₹{(candidate.expected_ctc_lakhs ?? 0).toFixed(2)}L</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

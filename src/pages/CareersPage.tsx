@@ -150,11 +150,7 @@ export default function CareersPage() {
       <div className="bg-white border-b shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={atsLogo} alt="In-Sync" className="h-8 w-auto" />
-            <div>
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Careers at</p>
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">{org.name}</h1>
-            </div>
+            <img src={org.logo_url || atsLogo} alt={org.name} className="h-9 w-auto" />
           </div>
           <Dialog open={dialogOpen} onOpenChange={v => { setDialogOpen(v); if (!v) { setFile(null); setSubmitted(false); setSelectedMandate(null); } }}>
             <DialogTrigger asChild>
@@ -212,6 +208,16 @@ export default function CareersPage() {
         </div>
       </div>
 
+      {/* Hero */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(600px 240px at 20% -20%, #ffffff, transparent), radial-gradient(500px 220px at 90% 120%, #93c5fd, transparent)" }} />
+        <div className="relative max-w-5xl mx-auto px-6 py-16 text-center">
+          <p className="text-blue-200 font-semibold tracking-[0.2em] text-xs uppercase mb-3">We're hiring</p>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight">Careers at {org.name}</h2>
+          <p className="mt-4 text-blue-100 text-lg max-w-2xl mx-auto">Explore open roles and apply in seconds — no account, no login. Just your résumé.</p>
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Search + filters */}
         <div className="flex gap-3 mb-6">
@@ -255,11 +261,11 @@ export default function CareersPage() {
             <p>No open positions found.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filtered.map(m => (
               <div
                 key={m.id}
-                className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer"
                 onClick={() => { setSelectedMandate(m); setDialogOpen(true); }}
               >
                 <div className="flex items-start justify-between gap-4">
