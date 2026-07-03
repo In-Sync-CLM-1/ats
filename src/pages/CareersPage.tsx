@@ -36,6 +36,7 @@ interface OrgInfo {
   id: string;
   name: string;
   slug: string;
+  logo_url?: string | null;
 }
 
 export default function CareersPage() {
@@ -58,7 +59,7 @@ export default function CareersPage() {
         // Load org by slug
         const { data: orgData, error: orgErr } = await supabase
           .from("organizations")
-          .select("id, name, slug")
+          .select("id, name, slug, logo_url")
           .eq("slug", slug)
           .single();
         if (orgErr || !orgData) { setLoading(false); return; }
