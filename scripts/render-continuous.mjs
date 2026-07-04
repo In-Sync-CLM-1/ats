@@ -4,11 +4,10 @@
 //
 //   node scripts/render-continuous.mjs              # seed + synth + record + stitch
 //   SKIP_SEED=1 node scripts/render-continuous.mjs  # re-record against existing data
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, join } from 'path';
 import { execFileSync } from 'child_process';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { SCENES } from './scenes.mjs';
 import { recordSceneVideo } from './lib/scene.mjs';
 import { synthTimed } from './lib/voice.mjs';
 import { crossfadeStitchVideo, overlayAudio, holdAndFade } from './lib/video.mjs';
@@ -16,6 +15,13 @@ import { crossfadeStitchVideo, overlayAudio, holdAndFade } from './lib/video.mjs
 const here = dirname(fileURLToPath(import.meta.url));
 const dir = join(here, 'recordings', 'scenes');
 const T_X = 0.5;
+
+// Alternate cuts: SCENES_FILE picks the scene script, CUT_NAME namespaces the
+// narration cache, OUT_FILE overrides the output path. Defaults = the main cut.
+const SCENES = (await import(process.env.SCENES_FILE
+  ? pathToFileURL(join(here, process.env.SCENES_FILE)).href
+  : './scenes.mjs')).SCENES;
+const CUT = process.env.CUT_NAME || null;
 
 // 0. Seed live demo state before recording
 if (process.env.SKIP_SEED !== '1') {
@@ -26,8 +32,8 @@ if (process.env.SKIP_SEED !== '1') {
 // 1. Synthesize one continuous narration (cached so re-runs are deterministic & resumable)
 const SEP = ' ';
 const fullText = SCENES.map((s) => s.narration).join(SEP);
-const mp3Path = join(dir, 'full-narration.mp3');
-const alignPath = join(dir, 'narration-align.json');
+const mp3Path = join(dir, CUT ? `${CUT}-narration.mp3` : 'full-narration.mp3');
+const alignPath = join(dir, CUT ? `${CUT}-align.json` : 'narration-align.json');
 let Taud;
 if (process.env.FRESH_NARRATION !== '1' && existsSync(mp3Path) && existsSync(alignPath)) {
   const c = JSON.parse(readFileSync(alignPath, 'utf8'));
@@ -121,10 +127,10 @@ for (let i = 0; i < SCENES.length; i++) {
 
 // 4. Stitch videos, overlay narration, fade to black
 console.log('\nStitching + overlaying narration...');
-const silent = join(dir, 'ats-silent.mp4');
+const silent = join(dir, CUT ? `ats-${CUT}-silent.mp4` : 'ats-silent.mp4');
 crossfadeStitchVideo(videos, silent, T_X);
-const narrated = join(dir, 'ats-narrated.mp4');
-overlayAudio(silent, join(dir, 'full-narration.mp3'), narrated);
-const out = 'C:\\Users\\Admin\\Downloads\\ats-demo-full.mp4';
+const narrated = join(dir, CUT ? `ats-${CUT}-narrated.mp4` : 'ats-narrated.mp4');
+overlayAudio(silent, mp3Path, narrated);
+const out = process.env.OUT_FILE || 'C:\\Users\\Admin\\Downloads\\ats-demo-full.mp4';
 holdAndFade(narrated, out, 2.0, 1.2);
 console.log('DONE ->', out);
