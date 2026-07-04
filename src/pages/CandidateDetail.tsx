@@ -6,6 +6,7 @@ import { useOrg } from "@/contexts/OrgContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OfferCard } from "@/components/OfferCard";
 import { InterviewsCard } from "@/components/InterviewsCard";
+import { WhatsAppThread } from "@/components/WhatsAppThread";
 import { CallHistory } from "@/components/CallHistory";
 import { CandidateScoreCard } from "@/components/CandidateScoreCard";
 import { AIScreeningButton } from "@/components/AIScreeningButton";
@@ -285,9 +286,10 @@ export default function CandidateDetail() {
       )}
 
       <Tabs defaultValue="details">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-xl grid-cols-4">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="history">Call History</TabsTrigger>
+          <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="resume">Resume</TabsTrigger>
         </TabsList>
 
@@ -497,6 +499,10 @@ export default function CandidateDetail() {
 
         <TabsContent value="history" className="mt-4">
           <CallHistory candidateId={candidate.id} showFilters={false} />
+        </TabsContent>
+
+        <TabsContent value="messages" className="mt-4">
+          <WhatsAppThread candidateId={candidate.id} onNewMessage={() => setWhatsappDialogOpen(true)} />
         </TabsContent>
 
         <TabsContent value="resume" className="mt-4">

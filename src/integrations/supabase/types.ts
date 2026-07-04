@@ -3869,6 +3869,59 @@ export type Database = {
           },
         ]
       }
+      whatsapp_messages: {
+        Row: {
+          body: string
+          candidate_id: string | null
+          created_at: string
+          direction: string
+          exotel_sid: string | null
+          id: string
+          org_id: string | null
+          phone: string
+          raw: Json | null
+          sent_by: string | null
+          status: string
+          template_name: string | null
+        }
+        Insert: {
+          body: string
+          candidate_id?: string | null
+          created_at?: string
+          direction: string
+          exotel_sid?: string | null
+          id?: string
+          org_id?: string | null
+          phone: string
+          raw?: Json | null
+          sent_by?: string | null
+          status?: string
+          template_name?: string | null
+        }
+        Update: {
+          body?: string
+          candidate_id?: string | null
+          created_at?: string
+          direction?: string
+          exotel_sid?: string | null
+          id?: string
+          org_id?: string | null
+          phone?: string
+          raw?: Json | null
+          sent_by?: string | null
+          status?: string
+          template_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_templates: {
         Row: {
           body: string

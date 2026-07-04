@@ -200,6 +200,32 @@ serve(async (req) => {
         } else {
           console.log(`WhatsApp message logged successfully for candidate ${candidate_id}`);
         }
+
+        // Also write the conversation thread (whatsapp_messages powers the
+        // Messages tab on the candidate profile)
+        let orgId: string | null = null;
+        if (candidate_id) {
+          const { data: cand } = await supabase
+            .from('candidates')
+            .select('org_id')
+            .eq('id', candidate_id)
+            .maybeSingle();
+          orgId = cand?.org_id ?? null;
+        }
+        const { error: threadError } = await supabase
+          .from('whatsapp_messages')
+          .insert({
+            org_id: orgId,
+            candidate_id: candidate_id || null,
+            phone: formattedToNumber.replace(/\D/g, '').slice(-10),
+            direction: 'outbound',
+            body: message || `Template: ${template_name}`,
+            template_name: template_name || null,
+            exotel_sid: messageSid,
+            status: 'sent',
+            sent_by: userId,
+          });
+        if (threadError) console.error('Error writing whatsapp thread:', threadError);
       } catch (logError) {
         console.error('Error logging WhatsApp message:', logError);
       }

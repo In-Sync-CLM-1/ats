@@ -66,3 +66,7 @@ verify_jwt = true
 # Invoked by the Cloudflare Worker cron — guarded by x-cron-secret, not a user JWT
 [functions.ghosting-watchdog]
 verify_jwt = false
+
+# Exotel posts inbound WhatsApp messages here — external webhook, no user JWT
+[functions.exotel-whatsapp-inbound]
+verify_jwt = false
