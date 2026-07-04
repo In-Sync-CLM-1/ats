@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ClientShortlistCard } from "@/components/ClientShortlistCard";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ArrowLeft, Pencil, Building2, Users, Calendar, DollarSign } from "lucide-react";
 import { format } from "date-fns";
@@ -291,6 +292,8 @@ export default function MandateDetail() {
           </CardContent>
         </Card>
       </div>
+
+      <ClientShortlistCard mandateId={mandate.id} />
 
       {mandate.job_description && (
         <Card>

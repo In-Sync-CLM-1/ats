@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -25,6 +25,7 @@ export type Database = {
           failed_records: number | null
           file_name: string
           id: string
+          org_id: string | null
           processed_records: number | null
           reverted_at: string | null
           status: Database["public"]["Enums"]["import_status"]
@@ -44,6 +45,7 @@ export type Database = {
           failed_records?: number | null
           file_name: string
           id?: string
+          org_id?: string | null
           processed_records?: number | null
           reverted_at?: string | null
           status?: Database["public"]["Enums"]["import_status"]
@@ -63,6 +65,7 @@ export type Database = {
           failed_records?: number | null
           file_name?: string
           id?: string
+          org_id?: string | null
           processed_records?: number | null
           reverted_at?: string | null
           status?: Database["public"]["Enums"]["import_status"]
@@ -72,7 +75,15 @@ export type Database = {
           total_records?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bulk_import_history_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bulk_import_records: {
         Row: {
@@ -115,6 +126,7 @@ export type Database = {
           disposition: string
           id: string
           is_active: boolean | null
+          org_id: string | null
           subdispositions: string[]
         }
         Insert: {
@@ -122,6 +134,7 @@ export type Database = {
           disposition: string
           id?: string
           is_active?: boolean | null
+          org_id?: string | null
           subdispositions?: string[]
         }
         Update: {
@@ -129,9 +142,18 @@ export type Database = {
           disposition?: string
           id?: string
           is_active?: boolean | null
+          org_id?: string | null
           subdispositions?: string[]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "call_dispositions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_logs: {
         Row: {
@@ -140,9 +162,9 @@ export type Database = {
           bolna_execution_id: string | null
           call_method: string | null
           call_sid: string | null
-          candidate_id: string | null
           conversation_duration: number | null
           created_at: string
+          demandcom_id: string | null
           direction: string | null
           disposition: string | null
           disposition_set_at: string | null
@@ -154,6 +176,7 @@ export type Database = {
           id: string
           initiated_by: string | null
           notes: string | null
+          org_id: string | null
           recording_url: string | null
           start_time: string | null
           status: string
@@ -168,9 +191,9 @@ export type Database = {
           bolna_execution_id?: string | null
           call_method?: string | null
           call_sid?: string | null
-          candidate_id?: string | null
           conversation_duration?: number | null
           created_at?: string
+          demandcom_id?: string | null
           direction?: string | null
           disposition?: string | null
           disposition_set_at?: string | null
@@ -182,6 +205,7 @@ export type Database = {
           id?: string
           initiated_by?: string | null
           notes?: string | null
+          org_id?: string | null
           recording_url?: string | null
           start_time?: string | null
           status?: string
@@ -196,9 +220,9 @@ export type Database = {
           bolna_execution_id?: string | null
           call_method?: string | null
           call_sid?: string | null
-          candidate_id?: string | null
           conversation_duration?: number | null
           created_at?: string
+          demandcom_id?: string | null
           direction?: string | null
           disposition?: string | null
           disposition_set_at?: string | null
@@ -210,6 +234,7 @@ export type Database = {
           id?: string
           initiated_by?: string | null
           notes?: string | null
+          org_id?: string | null
           recording_url?: string | null
           start_time?: string | null
           status?: string
@@ -221,7 +246,7 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "call_logs_demandcom_id_fkey"
-            columns: ["candidate_id"]
+            columns: ["demandcom_id"]
             isOneToOne: false
             referencedRelation: "candidates"
             referencedColumns: ["id"]
@@ -238,6 +263,64 @@ export type Database = {
             columns: ["initiated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_ai_scores: {
+        Row: {
+          breakdown: Json
+          candidate_id: string
+          category: string
+          id: string
+          input_hash: string | null
+          org_id: string | null
+          reasoning: string | null
+          score: number
+          scored_at: string
+        }
+        Insert: {
+          breakdown?: Json
+          candidate_id: string
+          category: string
+          id?: string
+          input_hash?: string | null
+          org_id?: string | null
+          reasoning?: string | null
+          score: number
+          scored_at?: string
+        }
+        Update: {
+          breakdown?: Json
+          candidate_id?: string
+          category?: string
+          id?: string
+          input_hash?: string | null
+          org_id?: string | null
+          reasoning?: string | null
+          score?: number
+          scored_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_ai_scores_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: true
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_ai_scores_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -299,57 +382,6 @@ export type Database = {
           },
         ]
       }
-      candidate_ai_scores: {
-        Row: {
-          breakdown: Json
-          candidate_id: string
-          category: string
-          id: string
-          input_hash: string | null
-          org_id: string | null
-          reasoning: string | null
-          score: number
-          scored_at: string
-        }
-        Insert: {
-          breakdown?: Json
-          candidate_id: string
-          category: string
-          id?: string
-          input_hash?: string | null
-          org_id?: string | null
-          reasoning?: string | null
-          score: number
-          scored_at?: string
-        }
-        Update: {
-          breakdown?: Json
-          candidate_id?: string
-          category?: string
-          id?: string
-          input_hash?: string | null
-          org_id?: string | null
-          reasoning?: string | null
-          score?: number
-          scored_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "candidate_ai_scores_candidate_id_fkey"
-            columns: ["candidate_id"]
-            isOneToOne: true
-            referencedRelation: "candidates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "candidate_ai_scores_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       candidates: {
         Row: {
           aadhaar_number_masked: string | null
@@ -359,6 +391,7 @@ export type Database = {
           aadhaar_verified_dob: string | null
           aadhaar_verified_gender: string | null
           aadhaar_verified_name: string | null
+          aadhar_number: string | null
           address: string | null
           application_date: string
           application_submitted_at: string | null
@@ -385,6 +418,7 @@ export type Database = {
           interview_stage: string | null
           interviewer_names: string | null
           is_fresh_application: boolean | null
+          is_onboarded: boolean
           key_skills: string | null
           kyc_completed_at: string | null
           kyc_provider: string | null
@@ -397,6 +431,7 @@ export type Database = {
           location: string | null
           next_call_date: string | null
           notice_period_days: number | null
+          org_id: string | null
           pan_aadhaar_linked: string | null
           pan_category: string | null
           pan_number: string | null
@@ -426,6 +461,7 @@ export type Database = {
           aadhaar_verified_dob?: string | null
           aadhaar_verified_gender?: string | null
           aadhaar_verified_name?: string | null
+          aadhar_number?: string | null
           address?: string | null
           application_date?: string
           application_submitted_at?: string | null
@@ -452,6 +488,7 @@ export type Database = {
           interview_stage?: string | null
           interviewer_names?: string | null
           is_fresh_application?: boolean | null
+          is_onboarded?: boolean
           key_skills?: string | null
           kyc_completed_at?: string | null
           kyc_provider?: string | null
@@ -464,6 +501,7 @@ export type Database = {
           location?: string | null
           next_call_date?: string | null
           notice_period_days?: number | null
+          org_id?: string | null
           pan_aadhaar_linked?: string | null
           pan_category?: string | null
           pan_number?: string | null
@@ -493,6 +531,7 @@ export type Database = {
           aadhaar_verified_dob?: string | null
           aadhaar_verified_gender?: string | null
           aadhaar_verified_name?: string | null
+          aadhar_number?: string | null
           address?: string | null
           application_date?: string
           application_submitted_at?: string | null
@@ -519,6 +558,7 @@ export type Database = {
           interview_stage?: string | null
           interviewer_names?: string | null
           is_fresh_application?: boolean | null
+          is_onboarded?: boolean
           key_skills?: string | null
           kyc_completed_at?: string | null
           kyc_provider?: string | null
@@ -531,6 +571,7 @@ export type Database = {
           location?: string | null
           next_call_date?: string | null
           notice_period_days?: number | null
+          org_id?: string | null
           pan_aadhaar_linked?: string | null
           pan_category?: string | null
           pan_number?: string | null
@@ -554,6 +595,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "candidates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "candidates_source_recruiter_id_fkey"
             columns: ["source_recruiter_id"]
             isOneToOne: false
@@ -576,7 +624,178 @@ export type Database = {
           },
         ]
       }
-      candidates_backup_swap_20250129: {
+      clients: {
+        Row: {
+          account_manager_id: string | null
+          average_time_to_hire_days: number | null
+          background_verification_details: string | null
+          background_verification_required: boolean | null
+          billing_cycle: string | null
+          branch_locations: Json | null
+          client_status: string
+          company_name: string
+          company_size_employees: number | null
+          company_type: string | null
+          company_website: string | null
+          contact_name: string
+          contact_number: string
+          contact_person_designation: string
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          created_by: string | null
+          credit_limit: number | null
+          email_id: string | null
+          finance_contact_email: string | null
+          finance_contact_name: string | null
+          finance_contact_phone: string | null
+          gst_number: string | null
+          head_office_location: string | null
+          hiring_manager_contact: string | null
+          hiring_manager_name: string | null
+          hr_head_contact: string | null
+          hr_head_name: string | null
+          id: string
+          industry_sector: string
+          internal_notes: string | null
+          last_interaction_date: string | null
+          msa_agreement_status: string | null
+          notice_period_accepted_days: number | null
+          org_id: string | null
+          pan_number: string | null
+          payment_terms_days: number | null
+          preferred_sourcing_channels: string[] | null
+          registration_date: string
+          salary_range_max: number | null
+          salary_range_min: number | null
+          secondary_contact_email: string | null
+          secondary_contact_person: string | null
+          secondary_contact_phone: string | null
+          service_fee_percentage: number | null
+          typical_hiring_volume_monthly: number | null
+          typical_hiring_volume_yearly: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_manager_id?: string | null
+          average_time_to_hire_days?: number | null
+          background_verification_details?: string | null
+          background_verification_required?: boolean | null
+          billing_cycle?: string | null
+          branch_locations?: Json | null
+          client_status?: string
+          company_name: string
+          company_size_employees?: number | null
+          company_type?: string | null
+          company_website?: string | null
+          contact_name: string
+          contact_number: string
+          contact_person_designation?: string
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_limit?: number | null
+          email_id?: string | null
+          finance_contact_email?: string | null
+          finance_contact_name?: string | null
+          finance_contact_phone?: string | null
+          gst_number?: string | null
+          head_office_location?: string | null
+          hiring_manager_contact?: string | null
+          hiring_manager_name?: string | null
+          hr_head_contact?: string | null
+          hr_head_name?: string | null
+          id?: string
+          industry_sector?: string
+          internal_notes?: string | null
+          last_interaction_date?: string | null
+          msa_agreement_status?: string | null
+          notice_period_accepted_days?: number | null
+          org_id?: string | null
+          pan_number?: string | null
+          payment_terms_days?: number | null
+          preferred_sourcing_channels?: string[] | null
+          registration_date?: string
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          secondary_contact_email?: string | null
+          secondary_contact_person?: string | null
+          secondary_contact_phone?: string | null
+          service_fee_percentage?: number | null
+          typical_hiring_volume_monthly?: number | null
+          typical_hiring_volume_yearly?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_manager_id?: string | null
+          average_time_to_hire_days?: number | null
+          background_verification_details?: string | null
+          background_verification_required?: boolean | null
+          billing_cycle?: string | null
+          branch_locations?: Json | null
+          client_status?: string
+          company_name?: string
+          company_size_employees?: number | null
+          company_type?: string | null
+          company_website?: string | null
+          contact_name?: string
+          contact_number?: string
+          contact_person_designation?: string
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_limit?: number | null
+          email_id?: string | null
+          finance_contact_email?: string | null
+          finance_contact_name?: string | null
+          finance_contact_phone?: string | null
+          gst_number?: string | null
+          head_office_location?: string | null
+          hiring_manager_contact?: string | null
+          hiring_manager_name?: string | null
+          hr_head_contact?: string | null
+          hr_head_name?: string | null
+          id?: string
+          industry_sector?: string
+          internal_notes?: string | null
+          last_interaction_date?: string | null
+          msa_agreement_status?: string | null
+          notice_period_accepted_days?: number | null
+          org_id?: string | null
+          pan_number?: string | null
+          payment_terms_days?: number | null
+          preferred_sourcing_channels?: string[] | null
+          registration_date?: string
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          secondary_contact_email?: string | null
+          secondary_contact_person?: string | null
+          secondary_contact_phone?: string | null
+          service_fee_percentage?: number | null
+          typical_hiring_volume_monthly?: number | null
+          typical_hiring_volume_yearly?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_account_manager_id_fkey"
+            columns: ["account_manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demandcom_backup_swap_20250129: {
         Row: {
           activity_name: string | null
           address: string | null
@@ -684,9 +903,9 @@ export type Database = {
         }
         Relationships: []
       }
-      candidates_pipeline: {
+      demandcom_pipeline: {
         Row: {
-          candidate_id: string
+          demandcom_id: string
           entered_at: string
           exited_at: string | null
           id: string
@@ -696,7 +915,7 @@ export type Database = {
           stage_id: string
         }
         Insert: {
-          candidate_id: string
+          demandcom_id: string
           entered_at?: string
           exited_at?: string | null
           id?: string
@@ -706,7 +925,7 @@ export type Database = {
           stage_id: string
         }
         Update: {
-          candidate_id?: string
+          demandcom_id?: string
           entered_at?: string
           exited_at?: string | null
           id?: string
@@ -718,7 +937,7 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "candidate_pipeline_candidate_id_fkey"
-            columns: ["candidate_id"]
+            columns: ["demandcom_id"]
             isOneToOne: false
             referencedRelation: "candidates"
             referencedColumns: ["id"]
@@ -732,170 +951,9 @@ export type Database = {
           },
           {
             foreignKeyName: "demandcom_pipeline_demandcom_id_fkey"
-            columns: ["candidate_id"]
+            columns: ["demandcom_id"]
             isOneToOne: false
             referencedRelation: "candidates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      clients: {
-        Row: {
-          account_manager_id: string | null
-          average_time_to_hire_days: number | null
-          background_verification_details: string | null
-          background_verification_required: boolean | null
-          billing_cycle: string | null
-          branch_locations: Json | null
-          client_status: string
-          company_name: string
-          company_size_employees: number | null
-          company_type: string | null
-          company_website: string | null
-          contact_name: string
-          contact_number: string
-          contact_person_designation: string
-          contract_end_date: string | null
-          contract_start_date: string | null
-          created_at: string
-          created_by: string | null
-          credit_limit: number | null
-          email_id: string | null
-          finance_contact_email: string | null
-          finance_contact_name: string | null
-          finance_contact_phone: string | null
-          gst_number: string | null
-          head_office_location: string | null
-          hiring_manager_contact: string | null
-          hiring_manager_name: string | null
-          hr_head_contact: string | null
-          hr_head_name: string | null
-          id: string
-          industry_sector: string
-          internal_notes: string | null
-          last_interaction_date: string | null
-          msa_agreement_status: string | null
-          notice_period_accepted_days: number | null
-          pan_number: string | null
-          payment_terms_days: number | null
-          preferred_sourcing_channels: string[] | null
-          registration_date: string
-          salary_range_max: number | null
-          salary_range_min: number | null
-          secondary_contact_email: string | null
-          secondary_contact_person: string | null
-          secondary_contact_phone: string | null
-          service_fee_percentage: number | null
-          typical_hiring_volume_monthly: number | null
-          typical_hiring_volume_yearly: number | null
-          updated_at: string
-        }
-        Insert: {
-          account_manager_id?: string | null
-          average_time_to_hire_days?: number | null
-          background_verification_details?: string | null
-          background_verification_required?: boolean | null
-          billing_cycle?: string | null
-          branch_locations?: Json | null
-          client_status?: string
-          company_name: string
-          company_size_employees?: number | null
-          company_type?: string | null
-          company_website?: string | null
-          contact_name: string
-          contact_number: string
-          contact_person_designation?: string
-          contract_end_date?: string | null
-          contract_start_date?: string | null
-          created_at?: string
-          created_by?: string | null
-          credit_limit?: number | null
-          email_id?: string | null
-          finance_contact_email?: string | null
-          finance_contact_name?: string | null
-          finance_contact_phone?: string | null
-          gst_number?: string | null
-          head_office_location?: string | null
-          hiring_manager_contact?: string | null
-          hiring_manager_name?: string | null
-          hr_head_contact?: string | null
-          hr_head_name?: string | null
-          id?: string
-          industry_sector?: string
-          internal_notes?: string | null
-          last_interaction_date?: string | null
-          msa_agreement_status?: string | null
-          notice_period_accepted_days?: number | null
-          pan_number?: string | null
-          payment_terms_days?: number | null
-          preferred_sourcing_channels?: string[] | null
-          registration_date?: string
-          salary_range_max?: number | null
-          salary_range_min?: number | null
-          secondary_contact_email?: string | null
-          secondary_contact_person?: string | null
-          secondary_contact_phone?: string | null
-          service_fee_percentage?: number | null
-          typical_hiring_volume_monthly?: number | null
-          typical_hiring_volume_yearly?: number | null
-          updated_at?: string
-        }
-        Update: {
-          account_manager_id?: string | null
-          average_time_to_hire_days?: number | null
-          background_verification_details?: string | null
-          background_verification_required?: boolean | null
-          billing_cycle?: string | null
-          branch_locations?: Json | null
-          client_status?: string
-          company_name?: string
-          company_size_employees?: number | null
-          company_type?: string | null
-          company_website?: string | null
-          contact_name?: string
-          contact_number?: string
-          contact_person_designation?: string
-          contract_end_date?: string | null
-          contract_start_date?: string | null
-          created_at?: string
-          created_by?: string | null
-          credit_limit?: number | null
-          email_id?: string | null
-          finance_contact_email?: string | null
-          finance_contact_name?: string | null
-          finance_contact_phone?: string | null
-          gst_number?: string | null
-          head_office_location?: string | null
-          hiring_manager_contact?: string | null
-          hiring_manager_name?: string | null
-          hr_head_contact?: string | null
-          hr_head_name?: string | null
-          id?: string
-          industry_sector?: string
-          internal_notes?: string | null
-          last_interaction_date?: string | null
-          msa_agreement_status?: string | null
-          notice_period_accepted_days?: number | null
-          pan_number?: string | null
-          payment_terms_days?: number | null
-          preferred_sourcing_channels?: string[] | null
-          registration_date?: string
-          salary_range_max?: number | null
-          salary_range_min?: number | null
-          secondary_contact_email?: string | null
-          secondary_contact_person?: string | null
-          secondary_contact_phone?: string | null
-          service_fee_percentage?: number | null
-          typical_hiring_volume_monthly?: number | null
-          typical_hiring_volume_yearly?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clients_account_manager_id_fkey"
-            columns: ["account_manager_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -908,6 +966,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           level: number | null
+          org_id: string | null
           title: string
           updated_at: string
         }
@@ -918,6 +977,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           level?: number | null
+          org_id?: string | null
           title: string
           updated_at?: string
         }
@@ -928,10 +988,19 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           level?: number | null
+          org_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "designations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_templates: {
         Row: {
@@ -950,6 +1019,7 @@ export type Database = {
           linkedin_url: string | null
           merge_tags: string[] | null
           name: string
+          org_id: string | null
           subject: string
           twitter_url: string | null
           updated_at: string
@@ -971,6 +1041,7 @@ export type Database = {
           linkedin_url?: string | null
           merge_tags?: string[] | null
           name: string
+          org_id?: string | null
           subject: string
           twitter_url?: string | null
           updated_at?: string
@@ -992,12 +1063,21 @@ export type Database = {
           linkedin_url?: string | null
           merge_tags?: string[] | null
           name?: string
+          org_id?: string | null
           subject?: string
           twitter_url?: string | null
           updated_at?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       export_jobs: {
         Row: {
@@ -1007,6 +1087,7 @@ export type Database = {
           file_url: string | null
           filters: Json | null
           id: string
+          org_id: string | null
           processed_records: number | null
           source: string
           started_at: string | null
@@ -1022,6 +1103,7 @@ export type Database = {
           file_url?: string | null
           filters?: Json | null
           id?: string
+          org_id?: string | null
           processed_records?: number | null
           source: string
           started_at?: string | null
@@ -1037,6 +1119,7 @@ export type Database = {
           file_url?: string | null
           filters?: Json | null
           id?: string
+          org_id?: string | null
           processed_records?: number | null
           source?: string
           started_at?: string | null
@@ -1045,7 +1128,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "export_jobs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feature_announcements: {
         Row: {
@@ -1107,6 +1198,7 @@ export type Database = {
           description: string | null
           due_date: string
           id: string
+          org_id: string | null
           priority: string | null
           status: string
           task_name: string
@@ -1120,6 +1212,7 @@ export type Database = {
           description?: string | null
           due_date: string
           id?: string
+          org_id?: string | null
           priority?: string | null
           status?: string
           task_name: string
@@ -1133,12 +1226,21 @@ export type Database = {
           description?: string | null
           due_date?: string
           id?: string
+          org_id?: string | null
           priority?: string | null
           status?: string
           task_name?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "general_tasks_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_batches: {
         Row: {
@@ -1221,6 +1323,7 @@ export type Database = {
           location_state: string | null
           location_zip: string | null
           longitude: number | null
+          org_id: string | null
           salary_max: number | null
           salary_min: number | null
           specialty: string | null
@@ -1240,6 +1343,7 @@ export type Database = {
           location_state?: string | null
           location_zip?: string | null
           longitude?: number | null
+          org_id?: string | null
           salary_max?: number | null
           salary_min?: number | null
           specialty?: string | null
@@ -1259,6 +1363,7 @@ export type Database = {
           location_state?: string | null
           location_zip?: string | null
           longitude?: number | null
+          org_id?: string | null
           salary_max?: number | null
           salary_min?: number | null
           specialty?: string | null
@@ -1266,11 +1371,22 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "jobs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mandate_candidates: {
         Row: {
           candidate_id: string
+          client_comment: string | null
+          client_decided_at: string | null
+          client_decision: string | null
           created_at: string
           created_by: string | null
           current_stage: string
@@ -1285,6 +1401,9 @@ export type Database = {
         }
         Insert: {
           candidate_id: string
+          client_comment?: string | null
+          client_decided_at?: string | null
+          client_decision?: string | null
           created_at?: string
           created_by?: string | null
           current_stage?: string
@@ -1299,6 +1418,9 @@ export type Database = {
         }
         Update: {
           candidate_id?: string
+          client_comment?: string | null
+          client_decided_at?: string | null
+          client_decision?: string | null
           created_at?: string
           created_by?: string | null
           current_stage?: string
@@ -1331,80 +1453,6 @@ export type Database = {
             columns: ["mandate_id"]
             isOneToOne: false
             referencedRelation: "mandates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      mandate_team_members: {
-        Row: {
-          assigned_at: string
-          assigned_by: string | null
-          id: string
-          mandate_id: string
-          role_in_mandate: string
-          user_id: string
-        }
-        Insert: {
-          assigned_at?: string
-          assigned_by?: string | null
-          id?: string
-          mandate_id: string
-          role_in_mandate?: string
-          user_id: string
-        }
-        Update: {
-          assigned_at?: string
-          assigned_by?: string | null
-          id?: string
-          mandate_id?: string
-          role_in_mandate?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_team_members_project_id_fkey"
-            columns: ["mandate_id"]
-            isOneToOne: false
-            referencedRelation: "mandates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      mandate_team_notifications: {
-        Row: {
-          id: string
-          mandate_id: string
-          notification_type: string
-          notified_at: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          mandate_id: string
-          notification_type?: string
-          notified_at?: string
-          user_id: string
-        }
-        Update: {
-          id?: string
-          mandate_id?: string
-          notification_type?: string
-          notified_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_team_notifications_project_id_fkey"
-            columns: ["mandate_id"]
-            isOneToOne: false
-            referencedRelation: "mandates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_team_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1442,6 +1490,7 @@ export type Database = {
           minimum_qualification: string
           notice_period_acceptable: number
           number_of_positions: number
+          org_id: string | null
           other_benefits: string | null
           positions_filled: number
           preferred_skills: string[] | null
@@ -1454,6 +1503,7 @@ export type Database = {
           secondary_recruiter_id: string | null
           service_fee_percentage: number | null
           shift_timings: string | null
+          shortlist_token: string | null
           sourcing_strategy: string | null
           special_requirements: string | null
           target_closure_date: string
@@ -1495,6 +1545,7 @@ export type Database = {
           minimum_qualification?: string
           notice_period_acceptable?: number
           number_of_positions?: number
+          org_id?: string | null
           other_benefits?: string | null
           positions_filled?: number
           preferred_skills?: string[] | null
@@ -1507,6 +1558,7 @@ export type Database = {
           secondary_recruiter_id?: string | null
           service_fee_percentage?: number | null
           shift_timings?: string | null
+          shortlist_token?: string | null
           sourcing_strategy?: string | null
           special_requirements?: string | null
           target_closure_date?: string
@@ -1548,6 +1600,7 @@ export type Database = {
           minimum_qualification?: string
           notice_period_acceptable?: number
           number_of_positions?: number
+          org_id?: string | null
           other_benefits?: string | null
           positions_filled?: number
           preferred_skills?: string[] | null
@@ -1560,6 +1613,7 @@ export type Database = {
           secondary_recruiter_id?: string | null
           service_fee_percentage?: number | null
           shift_timings?: string | null
+          shortlist_token?: string | null
           sourcing_strategy?: string | null
           special_requirements?: string | null
           target_closure_date?: string
@@ -1589,6 +1643,13 @@ export type Database = {
             columns: ["secondary_recruiter_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1640,6 +1701,128 @@ export type Database = {
           },
         ]
       }
+      onboarding_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          submission_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          submission_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          submission_id?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_documents_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_forms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          org_id: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          org_id?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          org_id?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_forms_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_forms_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_otp_verifications: {
+        Row: {
+          contact: string
+          created_at: string
+          expires_at: string
+          id: string
+          otp_code: string
+          type: string
+          verified: boolean
+        }
+        Insert: {
+          contact: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          type: string
+          verified?: boolean
+        }
+        Update: {
+          contact?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          type?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       onboarding_steps: {
         Row: {
           action_label: string | null
@@ -1687,6 +1870,140 @@ export type Database = {
           },
         ]
       }
+      onboarding_submissions: {
+        Row: {
+          aadhar_number: string | null
+          account_number: string | null
+          ai_review_at: string | null
+          ai_review_result: Json | null
+          bank_name: string | null
+          blood_group: string | null
+          branch_name: string | null
+          candidate_id: string | null
+          contact_number: string
+          created_at: string
+          date_of_birth: string | null
+          email_verified: boolean
+          emergency_contact_number: string | null
+          father_name: string | null
+          form_id: string
+          full_name: string
+          gender: string | null
+          id: string
+          ifsc_code: string | null
+          marital_status: string | null
+          mother_name: string | null
+          org_id: string | null
+          pan_number: string | null
+          permanent_address: string | null
+          personal_email: string
+          present_address: string | null
+          qualifications: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          uan_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          aadhar_number?: string | null
+          account_number?: string | null
+          ai_review_at?: string | null
+          ai_review_result?: Json | null
+          bank_name?: string | null
+          blood_group?: string | null
+          branch_name?: string | null
+          candidate_id?: string | null
+          contact_number: string
+          created_at?: string
+          date_of_birth?: string | null
+          email_verified?: boolean
+          emergency_contact_number?: string | null
+          father_name?: string | null
+          form_id: string
+          full_name: string
+          gender?: string | null
+          id?: string
+          ifsc_code?: string | null
+          marital_status?: string | null
+          mother_name?: string | null
+          org_id?: string | null
+          pan_number?: string | null
+          permanent_address?: string | null
+          personal_email: string
+          present_address?: string | null
+          qualifications?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          uan_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aadhar_number?: string | null
+          account_number?: string | null
+          ai_review_at?: string | null
+          ai_review_result?: Json | null
+          bank_name?: string | null
+          blood_group?: string | null
+          branch_name?: string | null
+          candidate_id?: string | null
+          contact_number?: string
+          created_at?: string
+          date_of_birth?: string | null
+          email_verified?: boolean
+          emergency_contact_number?: string | null
+          father_name?: string | null
+          form_id?: string
+          full_name?: string
+          gender?: string | null
+          id?: string
+          ifsc_code?: string | null
+          marital_status?: string | null
+          mother_name?: string | null
+          org_id?: string | null
+          pan_number?: string | null
+          permanent_address?: string | null
+          personal_email?: string
+          present_address?: string | null
+          qualifications?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          uan_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_submissions_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_submissions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_submissions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_tours: {
         Row: {
           created_at: string | null
@@ -1720,6 +2037,327 @@ export type Database = {
           tour_type?: Database["public"]["Enums"]["tour_type"]
           updated_at?: string | null
           version?: number
+        }
+        Relationships: []
+      }
+      org_credentials: {
+        Row: {
+          aadhaar_api_key: string | null
+          bolna_agent_id: string | null
+          bolna_caller_id: string | null
+          created_at: string
+          exotel_account_sid: string | null
+          exotel_api_key: string | null
+          exotel_api_token: string | null
+          exotel_caller_id: string | null
+          exotel_sender_number: string | null
+          exotel_subdomain: string | null
+          exotel_waba_id: string | null
+          id: string
+          is_configured: boolean
+          org_id: string
+          pan_api_key: string | null
+          smtp_from_email: string | null
+          smtp_from_name: string | null
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_user: string | null
+          updated_at: string
+        }
+        Insert: {
+          aadhaar_api_key?: string | null
+          bolna_agent_id?: string | null
+          bolna_caller_id?: string | null
+          created_at?: string
+          exotel_account_sid?: string | null
+          exotel_api_key?: string | null
+          exotel_api_token?: string | null
+          exotel_caller_id?: string | null
+          exotel_sender_number?: string | null
+          exotel_subdomain?: string | null
+          exotel_waba_id?: string | null
+          id?: string
+          is_configured?: boolean
+          org_id: string
+          pan_api_key?: string | null
+          smtp_from_email?: string | null
+          smtp_from_name?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aadhaar_api_key?: string | null
+          bolna_agent_id?: string | null
+          bolna_caller_id?: string | null
+          created_at?: string
+          exotel_account_sid?: string | null
+          exotel_api_key?: string | null
+          exotel_api_token?: string | null
+          exotel_caller_id?: string | null
+          exotel_sender_number?: string | null
+          exotel_subdomain?: string | null
+          exotel_waba_id?: string | null
+          id?: string
+          is_configured?: boolean
+          org_id?: string
+          pan_api_key?: string | null
+          smtp_from_email?: string | null
+          smtp_from_name?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_user?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_credentials_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_memberships: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: Database["public"]["Enums"]["org_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_memberships_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_settings: {
+        Row: {
+          act_today_only: boolean
+          allow_low_recharge: boolean
+          calling_windows: Json
+          demo_host_user_id: string | null
+          demo_meeting_link: string | null
+          demo_reminder_agent_id: string | null
+          dialing_active: boolean
+          enforce_wallet_in_trial: boolean
+          org_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          act_today_only?: boolean
+          allow_low_recharge?: boolean
+          calling_windows?: Json
+          demo_host_user_id?: string | null
+          demo_meeting_link?: string | null
+          demo_reminder_agent_id?: string | null
+          dialing_active?: boolean
+          enforce_wallet_in_trial?: boolean
+          org_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          act_today_only?: boolean
+          allow_low_recharge?: boolean
+          calling_windows?: Json
+          demo_host_user_id?: string | null
+          demo_meeting_link?: string | null
+          demo_reminder_agent_id?: string | null
+          dialing_active?: boolean
+          enforce_wallet_in_trial?: boolean
+          org_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_demo_host_user_id_fkey"
+            columns: ["demo_host_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_subscriptions: {
+        Row: {
+          billing_cycle_start: string
+          billing_period: string
+          created_at: string | null
+          grace_period_end: string | null
+          id: string
+          last_payment_date: string | null
+          lockout_date: string | null
+          monthly_subscription_amount: number
+          next_billing_date: string
+          one_time_setup_fee: number | null
+          org_id: string
+          override_by: string | null
+          override_reason: string | null
+          readonly_period_end: string | null
+          subscription_status: string
+          suspension_date: string | null
+          suspension_override_until: string | null
+          suspension_reason: string | null
+          updated_at: string | null
+          user_count: number
+          wallet_alert_level: string
+          wallet_alert_sent_at: string | null
+          wallet_auto_topup_enabled: boolean | null
+          wallet_balance: number
+          wallet_last_topup_date: string | null
+          wallet_low_alert_threshold: number
+          wallet_minimum_balance: number
+        }
+        Insert: {
+          billing_cycle_start: string
+          billing_period?: string
+          created_at?: string | null
+          grace_period_end?: string | null
+          id?: string
+          last_payment_date?: string | null
+          lockout_date?: string | null
+          monthly_subscription_amount?: number
+          next_billing_date: string
+          one_time_setup_fee?: number | null
+          org_id: string
+          override_by?: string | null
+          override_reason?: string | null
+          readonly_period_end?: string | null
+          subscription_status?: string
+          suspension_date?: string | null
+          suspension_override_until?: string | null
+          suspension_reason?: string | null
+          updated_at?: string | null
+          user_count?: number
+          wallet_alert_level?: string
+          wallet_alert_sent_at?: string | null
+          wallet_auto_topup_enabled?: boolean | null
+          wallet_balance?: number
+          wallet_last_topup_date?: string | null
+          wallet_low_alert_threshold?: number
+          wallet_minimum_balance?: number
+        }
+        Update: {
+          billing_cycle_start?: string
+          billing_period?: string
+          created_at?: string | null
+          grace_period_end?: string | null
+          id?: string
+          last_payment_date?: string | null
+          lockout_date?: string | null
+          monthly_subscription_amount?: number
+          next_billing_date?: string
+          one_time_setup_fee?: number | null
+          org_id?: string
+          override_by?: string | null
+          override_reason?: string | null
+          readonly_period_end?: string | null
+          subscription_status?: string
+          suspension_date?: string | null
+          suspension_override_until?: string | null
+          suspension_reason?: string | null
+          updated_at?: string | null
+          user_count?: number
+          wallet_alert_level?: string
+          wallet_alert_sent_at?: string | null
+          wallet_auto_topup_enabled?: boolean | null
+          wallet_balance?: number
+          wallet_last_topup_date?: string | null
+          wallet_low_alert_threshold?: number
+          wallet_minimum_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          industry: string | null
+          is_internal: boolean
+          logo_url: string | null
+          name: string
+          onboarding_completed: boolean
+          plan: string
+          services_enabled: boolean
+          slug: string
+          subscription_active: boolean
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          industry?: string | null
+          is_internal?: boolean
+          logo_url?: string | null
+          name: string
+          onboarding_completed?: boolean
+          plan?: string
+          services_enabled?: boolean
+          slug: string
+          subscription_active?: boolean
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          industry?: string | null
+          is_internal?: boolean
+          logo_url?: string | null
+          name?: string
+          onboarding_completed?: boolean
+          plan?: string
+          services_enabled?: boolean
+          slug?: string
+          subscription_active?: boolean
+          updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -1768,6 +2406,81 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          failure_reason: string | null
+          id: string
+          initiated_at: string | null
+          initiated_by: string | null
+          invoice_id: string | null
+          metadata: Json | null
+          org_id: string
+          payment_method: string | null
+          payment_status: string
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_signature: string | null
+          transaction_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          initiated_at?: string | null
+          initiated_by?: string | null
+          invoice_id?: string | null
+          metadata?: Json | null
+          org_id: string
+          payment_method?: string | null
+          payment_status?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          transaction_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          initiated_at?: string | null
+          initiated_by?: string | null
+          invoice_id?: string | null
+          metadata?: Json | null
+          org_id?: string
+          payment_method?: string | null
+          payment_status?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          transaction_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_stages: {
         Row: {
           color: string | null
@@ -1776,6 +2489,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          org_id: string | null
           stage_order: number
           stage_type: string
           updated_at: string
@@ -1787,6 +2501,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          org_id?: string | null
           stage_order: number
           stage_type?: string
           updated_at?: string
@@ -1798,11 +2513,20 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          org_id?: string | null
           stage_order?: number
           stage_type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_stages_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1814,6 +2538,7 @@ export type Database = {
           last_tour_version_seen: number | null
           onboarding_completed: boolean | null
           onboarding_skipped: boolean | null
+          org_id: string | null
           phone: string | null
           referral_code: string | null
           reports_to: string | null
@@ -1828,6 +2553,7 @@ export type Database = {
           last_tour_version_seen?: number | null
           onboarding_completed?: boolean | null
           onboarding_skipped?: boolean | null
+          org_id?: string | null
           phone?: string | null
           referral_code?: string | null
           reports_to?: string | null
@@ -1842,12 +2568,95 @@ export type Database = {
           last_tour_version_seen?: number | null
           onboarding_completed?: boolean | null
           onboarding_skipped?: boolean | null
+          org_id?: string | null
           phone?: string | null
           referral_code?: string | null
           reports_to?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_team_members: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          project_id: string
+          role_in_project: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          project_id: string
+          role_in_project?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          project_id?: string
+          role_in_project?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_team_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "mandates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_team_notifications: {
+        Row: {
+          id: string
+          notification_type: string
+          notified_at: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_type?: string
+          notified_at?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_type?: string
+          notified_at?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_team_notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "mandates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_team_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       public_job_applications: {
         Row: {
@@ -1948,6 +2757,63 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
+      }
+      service_usage_logs: {
+        Row: {
+          cost: number
+          created_at: string | null
+          deduction_error: string | null
+          id: string
+          org_id: string
+          quantity: number
+          reference_id: string
+          service_type: string
+          user_id: string | null
+          wallet_deducted: boolean | null
+          wallet_transaction_id: string | null
+        }
+        Insert: {
+          cost: number
+          created_at?: string | null
+          deduction_error?: string | null
+          id?: string
+          org_id: string
+          quantity: number
+          reference_id: string
+          service_type: string
+          user_id?: string | null
+          wallet_deducted?: boolean | null
+          wallet_transaction_id?: string | null
+        }
+        Update: {
+          cost?: number
+          created_at?: string | null
+          deduction_error?: string | null
+          id?: string
+          org_id?: string
+          quantity?: number
+          reference_id?: string
+          service_type?: string
+          user_id?: string | null
+          wallet_deducted?: boolean | null
+          wallet_transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_usage_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_usage_logs_wallet_transaction_id_fkey"
+            columns: ["wallet_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_coordinators: {
         Row: {
@@ -2077,6 +2943,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           location: string | null
+          org_id: string | null
           site_code: string | null
           site_name: string
           updated_at: string | null
@@ -2092,6 +2959,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           location?: string | null
+          org_id?: string | null
           site_code?: string | null
           site_name: string
           updated_at?: string | null
@@ -2107,6 +2975,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           location?: string | null
+          org_id?: string | null
           site_code?: string | null
           site_name?: string
           updated_at?: string | null
@@ -2126,6 +2995,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sms_templates: {
@@ -2139,6 +3015,7 @@ export type Database = {
           is_active: boolean
           merge_tags: string[] | null
           name: string
+          org_id: string | null
           updated_at: string
           version: number
         }
@@ -2152,6 +3029,7 @@ export type Database = {
           is_active?: boolean
           merge_tags?: string[] | null
           name: string
+          org_id?: string | null
           updated_at?: string
           version?: number
         }
@@ -2165,8 +3043,154 @@ export type Database = {
           is_active?: boolean
           merge_tags?: string[] | null
           name?: string
+          org_id?: string | null
           updated_at?: string
           version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_invoices: {
+        Row: {
+          base_subscription_amount: number
+          billing_period_end: string
+          billing_period_start: string
+          created_at: string | null
+          due_date: string
+          gst_amount: number
+          id: string
+          invoice_date: string
+          invoice_number: string
+          org_id: string
+          paid_amount: number | null
+          paid_at: string | null
+          payment_status: string
+          prorated_amount: number | null
+          setup_fee: number | null
+          subtotal: number
+          total_amount: number
+          updated_at: string | null
+          user_count: number
+          waive_reason: string | null
+          waived_by: string | null
+        }
+        Insert: {
+          base_subscription_amount: number
+          billing_period_end: string
+          billing_period_start: string
+          created_at?: string | null
+          due_date: string
+          gst_amount: number
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          org_id: string
+          paid_amount?: number | null
+          paid_at?: string | null
+          payment_status?: string
+          prorated_amount?: number | null
+          setup_fee?: number | null
+          subtotal: number
+          total_amount: number
+          updated_at?: string | null
+          user_count: number
+          waive_reason?: string | null
+          waived_by?: string | null
+        }
+        Update: {
+          base_subscription_amount?: number
+          billing_period_end?: string
+          billing_period_start?: string
+          created_at?: string | null
+          due_date?: string
+          gst_amount?: number
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          org_id?: string
+          paid_amount?: number | null
+          paid_at?: string | null
+          payment_status?: string
+          prorated_amount?: number | null
+          setup_fee?: number | null
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string | null
+          user_count?: number
+          waive_reason?: string | null
+          waived_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_invoices_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_pricing: {
+        Row: {
+          auto_topup_amount: number
+          auto_topup_enabled: boolean | null
+          call_cost_per_call: number | null
+          call_cost_per_minute: number
+          created_at: string | null
+          created_by: string | null
+          effective_from: string
+          email_cost_per_unit: number
+          gst_percentage: number
+          id: string
+          is_active: boolean | null
+          min_wallet_balance: number
+          one_time_setup_cost: number
+          per_user_monthly_cost: number
+          updated_at: string | null
+          whatsapp_cost_per_unit: number
+        }
+        Insert: {
+          auto_topup_amount?: number
+          auto_topup_enabled?: boolean | null
+          call_cost_per_call?: number | null
+          call_cost_per_minute?: number
+          created_at?: string | null
+          created_by?: string | null
+          effective_from?: string
+          email_cost_per_unit?: number
+          gst_percentage?: number
+          id?: string
+          is_active?: boolean | null
+          min_wallet_balance?: number
+          one_time_setup_cost?: number
+          per_user_monthly_cost?: number
+          updated_at?: string | null
+          whatsapp_cost_per_unit?: number
+        }
+        Update: {
+          auto_topup_amount?: number
+          auto_topup_enabled?: boolean | null
+          call_cost_per_call?: number | null
+          call_cost_per_minute?: number
+          created_at?: string | null
+          created_by?: string | null
+          effective_from?: string
+          email_cost_per_unit?: number
+          gst_percentage?: number
+          id?: string
+          is_active?: boolean | null
+          min_wallet_balance?: number
+          one_time_setup_cost?: number
+          per_user_monthly_cost?: number
+          updated_at?: string | null
+          whatsapp_cost_per_unit?: number
         }
         Relationships: []
       }
@@ -2261,6 +3285,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           joined_at: string
+          org_id: string | null
           role_in_team: string | null
           team_id: string
           user_id: string
@@ -2269,6 +3294,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           joined_at?: string
+          org_id?: string | null
           role_in_team?: string | null
           team_id: string
           user_id: string
@@ -2277,11 +3303,19 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           joined_at?: string
+          org_id?: string | null
           role_in_team?: string | null
           team_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "team_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "team_members_team_id_fkey"
             columns: ["team_id"]
@@ -2299,6 +3333,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          org_id: string | null
           team_lead_id: string | null
           updated_at: string
         }
@@ -2309,6 +3344,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          org_id?: string | null
           team_lead_id?: string | null
           updated_at?: string
         }
@@ -2319,10 +3355,19 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          org_id?: string | null
           team_lead_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teams_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_announcement_views: {
         Row: {
@@ -2363,6 +3408,7 @@ export type Database = {
           designation_id: string
           id: string
           is_current: boolean | null
+          org_id: string | null
           user_id: string
         }
         Insert: {
@@ -2371,6 +3417,7 @@ export type Database = {
           designation_id: string
           id?: string
           is_current?: boolean | null
+          org_id?: string | null
           user_id: string
         }
         Update: {
@@ -2379,6 +3426,7 @@ export type Database = {
           designation_id?: string
           id?: string
           is_current?: boolean | null
+          org_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -2387,6 +3435,13 @@ export type Database = {
             columns: ["designation_id"]
             isOneToOne: false
             referencedRelation: "designations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_designations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2443,6 +3498,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          org_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           user_id: string
@@ -2450,6 +3506,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          org_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id: string
@@ -2457,11 +3514,89 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          org_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_transactions: {
+        Row: {
+          admin_reason: string | null
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          org_id: string
+          payment_transaction_id: string | null
+          quantity: number | null
+          reference_id: string | null
+          reference_type: string | null
+          transaction_type: string
+          unit_cost: number | null
+        }
+        Insert: {
+          admin_reason?: string | null
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          org_id: string
+          payment_transaction_id?: string | null
+          quantity?: number | null
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type: string
+          unit_cost?: number | null
+        }
+        Update: {
+          admin_reason?: string | null
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          org_id?: string
+          payment_transaction_id?: string | null
+          quantity?: number | null
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_type?: string
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhook_connectors: {
         Row: {
@@ -2471,6 +3606,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          org_id: string | null
           rate_limit_per_minute: number
           target_table: string
           updated_at: string
@@ -2484,6 +3620,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          org_id?: string | null
           rate_limit_per_minute?: number
           target_table?: string
           updated_at?: string
@@ -2497,13 +3634,22 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          org_id?: string | null
           rate_limit_per_minute?: number
           target_table?: string
           updated_at?: string
           webhook_config?: Json | null
           webhook_token?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "webhook_connectors_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       webhook_logs: {
         Row: {
@@ -2594,6 +3740,7 @@ export type Database = {
           language_code: string | null
           merge_tags: string[] | null
           name: string
+          org_id: string | null
           updated_at: string
           variable_mapping: Json | null
         }
@@ -2611,6 +3758,7 @@ export type Database = {
           language_code?: string | null
           merge_tags?: string[] | null
           name: string
+          org_id?: string | null
           updated_at?: string
           variable_mapping?: Json | null
         }
@@ -2628,22 +3776,36 @@ export type Database = {
           language_code?: string | null
           merge_tags?: string[] | null
           name?: string
+          org_id?: string | null
           updated_at?: string
           variable_mapping?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      approve_candidate_onboarding: {
+        Args: { p_reviewer_id: string; p_submission_id: string }
+        Returns: undefined
+      }
       calculate_distance: {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number }
         Returns: number
       }
-      can_access_mandate: {
-        Args: { _mandate_id: string; _user_id: string }
+      calculate_monthly_amount: { Args: { _org_id: string }; Returns: number }
+      can_access_project: {
+        Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
       can_access_site: {
@@ -2654,12 +3816,43 @@ export type Database = {
         Args: { _accessor_id: string; _target_id: string }
         Returns: boolean
       }
+      check_and_update_subscription_status: {
+        Args: { _org_id: string }
+        Returns: undefined
+      }
       check_webhook_rate_limit: {
         Args: { _limit: number; _webhook_id: string }
         Returns: boolean
       }
+      deduct_from_wallet: {
+        Args: {
+          _amount: number
+          _org_id: string
+          _quantity: number
+          _reference_id: string
+          _service_type: string
+          _unit_cost: number
+          _user_id: string
+        }
+        Returns: Json
+      }
       generate_mandate_id: { Args: never; Returns: string }
       generate_project_number: { Args: never; Returns: string }
+      get_active_pricing: {
+        Args: never
+        Returns: {
+          auto_topup_amount: number
+          call_cost_per_call: number
+          call_cost_per_minute: number
+          email_cost_per_unit: number
+          gst_percentage: number
+          min_wallet_balance: number
+          one_time_setup_cost: number
+          per_user_monthly_cost: number
+          whatsapp_cost_per_unit: number
+        }[]
+      }
+      get_client_shortlist: { Args: { p_token: string }; Returns: Json }
       get_daily_record_counts: {
         Args: { days: number }
         Returns: {
@@ -2668,10 +3861,21 @@ export type Database = {
           updated_count: number
         }[]
       }
-      get_mandate_creator_name: { Args: { _user_id: string }; Returns: string }
+      get_project_creator_name: { Args: { _user_id: string }; Returns: string }
       get_user_designation_level: {
         Args: { _user_id: string }
         Returns: number
+      }
+      get_user_org_id: { Args: { _user_id: string }; Returns: string }
+      get_user_org_id_unlocked: { Args: { _user_id: string }; Returns: string }
+      get_user_org_ids: { Args: { _user_id: string }; Returns: string[] }
+      has_org_role: {
+        Args: {
+          _org_id: string
+          _role: Database["public"]["Enums"]["org_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       has_role: {
         Args: {
@@ -2680,13 +3884,40 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_mandate_team_member: {
-        Args: { _mandate_id: string; _user_id: string }
+      is_current_org_locked: { Args: never; Returns: boolean }
+      is_org_locked: { Args: { _org_id: string }; Returns: boolean }
+      is_org_member: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_project_team_member: {
+        Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
       process_bulk_import_batch: {
         Args: { p_import_id: string; p_table_name: string; p_user_id: string }
         Returns: Json
+      }
+      submit_client_feedback: {
+        Args: {
+          p_candidate_id: string
+          p_comment?: string
+          p_decision: string
+          p_token: string
+        }
+        Returns: undefined
+      }
+      submit_public_application: {
+        Args: {
+          p_candidate: Json
+          p_mandate_ids?: string[]
+          p_parsed_data?: Json
+          p_referral_code: string
+          p_resume_file_name?: string
+          p_resume_url?: string
+        }
+        Returns: string
       }
     }
     Enums: {
@@ -2710,6 +3941,7 @@ export type Database = {
         | "failed"
         | "cancelled"
       onboarding_status: "not_started" | "in_progress" | "completed" | "skipped"
+      org_role: "org_admin" | "member"
       priority_level: "high" | "medium" | "low"
       recommendation_status: "pending" | "completed" | "dismissed"
       recommendation_type:
@@ -2869,6 +4101,7 @@ export const Constants = {
         "cancelled",
       ],
       onboarding_status: ["not_started", "in_progress", "completed", "skipped"],
+      org_role: ["org_admin", "member"],
       priority_level: ["high", "medium", "low"],
       recommendation_status: ["pending", "completed", "dismissed"],
       recommendation_type: [
