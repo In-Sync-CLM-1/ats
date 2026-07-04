@@ -124,6 +124,24 @@ for (const cl of CLIENT_DEFS) {
 }
 const C = (n) => clientIds[n];
 
+// ── 4b. Client sites — the dashboard's "Active Sites" tile stays non-zero ────
+console.log('4b. Sites...');
+const SITE_DEFS = [
+  { site_name: 'TechCorp — Whitefield Campus', client: 'TechCorp Solutions', location: 'Bangalore', site_code: 'TC-BLR-01' },
+  { site_name: 'Meridian — Lower Parel HQ', client: 'Meridian Financial Services', location: 'Mumbai', site_code: 'MF-BOM-01' },
+  { site_name: 'RapidShip — Gurgaon Hub', client: 'RapidShip Logistics', location: 'Gurgaon', site_code: 'RS-GGN-01' },
+];
+for (const s of SITE_DEFS) {
+  const ex = await get(`sites?site_code=eq.${s.site_code}&select=id`);
+  if (!ex?.length) {
+    // org_id is REQUIRED for visibility: the sites RLS policy gates on org membership
+    await post('sites', { site_name: s.site_name, client_id: C(s.client), location: s.location, site_code: s.site_code, is_active: true, org_id: ORG_ID });
+  } else {
+    await patch(`sites?id=eq.${ex[0].id}`, { org_id: ORG_ID, is_active: true });
+  }
+  console.log(`   ${s.site_name}`);
+}
+
 // ── 5. Mandates ───────────────────────────────────────────────────────────────
 console.log('5. Mandates...');
 const MANDATE_DEFS = [
@@ -184,20 +202,22 @@ const PRIYA_FIELDS = {
   key_skills: 'React, TypeScript, Node.js, Redux, GraphQL',
   source: 'Referral',
 };
+// Priya's timeline: applied 3 days ago (after the mandate opened), first manual
+// call the same afternoon, AI screening call the next day — coherent on screen.
+const PRIYA_DATES = { created_at: daysAgo(3, 9, 30), application_date: daysAgo(3).slice(0, 10) };
 if (ex6?.length) {
   candidateId = ex6[0].id;
   await patch(`candidates?id=eq.${candidateId}`, {
-    ...PRIYA_FIELDS,
+    ...PRIYA_FIELDS, ...PRIYA_DATES,
     assigned_recruiter: AARAV_ID, source_recruiter_id: AARAV_ID,
   });
   console.log(`   refreshed ${candidateId}`);
 } else {
   const r = await post('candidates', {
     first_name: 'Priya', last_name: 'Sharma', email: 'priya.sharma.demo@gmail.com', phone: '9876543210',
-    ...PRIYA_FIELDS,
+    ...PRIYA_FIELDS, ...PRIYA_DATES,
     org_id: ORG_ID, assigned_recruiter: AARAV_ID, source_recruiter_id: AARAV_ID,
     created_by: ORG_ADMIN_ID,
-    created_at: daysAgo(6, 11),
   });
   candidateId = r[0].id;
   console.log(`   created ${candidateId}`);
@@ -399,12 +419,19 @@ for (const [fn, ln, emailSlug, phone, desig, cur, exp, stage, src, pos, notice, 
   let nextCall = null;
   if (recId === AARAV_ID && aaravToday < 4) { nextCall = TODAY; aaravToday++; }
   const enrich = { ...enrichAt(bi + 3, cur), source_recruiter_id: recId };
+  // First 10 arrivals land within the last 4 days so this month's dashboard
+  // (new candidates, source mix) is alive; the rest spread over ~4 weeks.
+  const arrivedDaysAgo = bi < 10 ? bi % 4 : 4 + ((bi * 2) % 24);
+  const arrival = {
+    created_at: daysAgo(arrivedDaysAgo, 9 + (bi % 8)),
+    application_date: daysAgo(arrivedDaysAgo).slice(0, 10),
+  };
   bi++;
   let cid;
   if (allCandidateEmails.has(email)) {
     const ex = await get(`candidates?email=eq.${encodeURIComponent(email)}&org_id=eq.${ORG_ID}&select=id`);
     cid = ex[0].id;
-    await patch(`candidates?id=eq.${cid}`, { interview_stage: stage, assigned_recruiter: recId, current_status: hired ? 'hired' : 'applied', next_call_date: nextCall, ...enrich });
+    await patch(`candidates?id=eq.${cid}`, { interview_stage: stage, assigned_recruiter: recId, current_status: hired ? 'hired' : 'applied', next_call_date: nextCall, ...enrich, ...arrival });
   } else {
     const r = await post('candidates', {
       first_name: fn, last_name: ln, email, phone,
@@ -412,7 +439,7 @@ for (const [fn, ln, emailSlug, phone, desig, cur, exp, stage, src, pos, notice, 
       interview_stage: stage, current_status: hired ? 'hired' : 'applied',
       source: src, position_applied_for: pos, notice_period_days: notice,
       org_id: ORG_ID, assigned_recruiter: recId, created_by: recId, next_call_date: nextCall,
-      created_at: demoDay(day, 10 + (bulkCandidateIds.length % 6)), ...enrich,
+      ...enrich, ...arrival,
     });
     cid = r[0].id;
   }

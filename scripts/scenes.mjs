@@ -165,6 +165,26 @@ export const SCENES = [
     },
   },
 
+  // ── S0b: Command center — the whole desk on one screen ──────────────────────
+  {
+    name: 's0b-dashboard', account: ACCT.admin,
+    narration: "First, thirty seconds of context. This is the command center: open roles, fill rate, every candidate in play, calls made this month, and how each mandate is moving. Everything you're about to watch lands on this one screen, live.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' });
+      await page.getByText(/ats dashboard/i).first().waitFor({ timeout: 20000 }).catch(() => {});
+      await waitLoaded(page, 800);
+      const waitUntil = await ready(900);
+      await waitUntil(at('open roles', 5, -0.3));
+      await zoomTo(page, page.getByText(/open positions/i).first(), 1.1, 900).catch(() => {});
+      await waitUntil(at('how each mandate', D - 5, -0.3));
+      await zoomReset(page);
+      await zoomTo(page, page.getByText(/mandate pipeline progression/i).first(), 1.1, 800).catch(() => {});
+      await waitUntil(at('live', D - 1));
+      await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
+
   // ── S1: The need — a role opens this morning ─────────────────────────────────
   {
     name: 's1-requirement', account: ACCT.admin,
@@ -231,6 +251,25 @@ export const SCENES = [
       await zoomTo(page, page.getByText(/basic information/i).first(), 1.1, 900).catch(() => {});
       await waitUntil(at('not one keystroke', D - 1.2));
       await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
+
+  // ── S3b: Bulk import — a whole job-board batch at once ──────────────────────
+  {
+    name: 's3b-bulk', account: ACCT.admin,
+    narration: "That was one résumé. A job-board dump works exactly the same way — bulk upload takes a whole CSV, or a stack of résumés, in one go. The same A.I. parses and files every single one.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(`${BASE}/candidates`, { waitUntil: 'networkidle' });
+      await page.getByText(/candidates/i).first().waitFor({ timeout: 20000 });
+      await waitLoaded(page);
+      const waitUntil = await ready(900);
+      await waitUntil(at('bulk upload', 6, -0.5));
+      const bulkBtn = page.getByRole('button', { name: /bulk upload/i }).first();
+      await clickLocator(page, bulkBtn, { dur: 700 }).catch(() => bulkBtn.click().catch(() => {}));
+      await page.getByText(/bulk import candidates/i).first().waitFor({ timeout: 6000 }).catch(() => {});
+      await waitUntil(at('every single one', D - 1.5));
+      await page.keyboard.press('Escape').catch(() => {});
       await waitUntil(D);
     },
   },
@@ -382,6 +421,26 @@ export const SCENES = [
     },
   },
 
+  // ── S9b: Calling dashboard — mission control for volume days ────────────────
+  {
+    name: 's9b-calling', account: ACCT.admin,
+    narration: "And on a heavy sourcing day, this is mission control: today's calls, connect rate, callbacks due, and every outcome logged as a disposition — across the whole team, live. High-volume calling without losing a single result.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(`${BASE}/calling-dashboard`, { waitUntil: 'networkidle' });
+      await page.getByText(/calling dashboard/i).first().waitFor({ timeout: 20000 }).catch(() => {});
+      await waitLoaded(page, 800);
+      const waitUntil = await ready(900);
+      await waitUntil(at("today's calls", 5, -0.4));
+      await zoomTo(page, page.getByText(/today's calls/i).first(), 1.1, 900).catch(() => {});
+      await waitUntil(at('every outcome logged', D - 6, -0.3));
+      await zoomReset(page);
+      await zoomTo(page, page.getByText(/recent call activity/i).first(), 1.08, 800).catch(() => {});
+      await waitUntil(at('single result', D - 1.2));
+      await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
+
   // ── S10: Follow-through — offer out from one screen ──────────────────────────
   {
     name: 's10-followup', account: ACCT.recruiter,
@@ -399,6 +458,27 @@ export const SCENES = [
       await clickLocator(page, em, { dur: 600 }).catch(() => {});
       await page.waitForTimeout(2600); await page.keyboard.press('Escape').catch(() => {});
       await waitUntil(at('time-stamped', D - 1.5));
+      await waitUntil(D);
+    },
+  },
+
+  // ── S10b: Templates library — nothing retyped twice ──────────────────────────
+  {
+    name: 's10b-templates', account: ACCT.admin,
+    narration: "None of those messages were typed from scratch. They live in a template library — offer letters, interview invites, WhatsApp follow-ups — with personalization tags that fill in the candidate's details by themselves.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(`${BASE}/templates`, { waitUntil: 'networkidle' });
+      await page.getByText(/^templates$/i).first().waitFor({ timeout: 20000 }).catch(() => {});
+      await waitLoaded(page, 800);
+      const waitUntil = await ready(900);
+      await waitUntil(at('template library', 6, -0.4));
+      await zoomTo(page, page.getByText(/email templates/i).first(), 1.1, 900).catch(() => {});
+      await waitUntil(at('whatsapp follow-ups', D - 5, -0.3));
+      await zoomReset(page);
+      const waTab = page.getByRole('tab', { name: /whatsapp/i }).first();
+      await clickLocator(page, waTab, { dur: 500 }).catch(() => waTab.click().catch(() => {}));
+      await page.waitForTimeout(800);
+      await waitUntil(at('by themselves', D - 1));
       await waitUntil(D);
     },
   },
@@ -481,6 +561,26 @@ export const SCENES = [
     },
   },
 
+  // ── S13a: The candidate's side — one link, no email attachments ─────────────
+  {
+    name: 's13a-join', account: ACCT.guest,
+    narration: "Priya's side of onboarding is one link on her phone. Personal details, government IDs, bank information, document uploads — all in a single guided form. No email attachments, no chasing, no back and forth.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(`${BASE}/join/onboard-insync-2026`, { waitUntil: 'networkidle' });
+      await page.getByText(/onboarding|personal|new hire/i).first().waitFor({ timeout: 20000 }).catch(() => {});
+      await waitLoaded(page, 800);
+      const waitUntil = await ready(900);
+      await waitUntil(at('one link', 4, -0.3));
+      await page.mouse.wheel(0, 500);
+      await page.waitForTimeout(600);
+      await waitUntil(at('document uploads', D - 5, -0.3));
+      await page.mouse.wheel(0, 600);
+      await page.waitForTimeout(500);
+      await waitUntil(at('back and forth', D - 1));
+      await waitUntil(D);
+    },
+  },
+
   // ── S13: Close it out — onboarding + AI document verify ──────────────────────
   {
     name: 's13-onboarding', account: ACCT.admin,
@@ -526,6 +626,24 @@ export const SCENES = [
       await zoomTo(page, page.getByText(/recruiter leaderboard/i).first(), 1.12, 900).catch(() => {});
       await waitUntil(at('becomes a number', D - 1.2));
       await zoomReset(page);
+      await waitUntil(D);
+    },
+  },
+
+  // ── S14b: Teams & roles — who sees what, configured once ────────────────────
+  {
+    name: 's14b-teams', account: ACCT.admin,
+    narration: "And all of it respects roles. Recruiters see their own desk; managers see everything. Users, teams, and even the pipeline stages themselves are configured once, in minutes — then the system simply enforces them.",
+    beats: async ({ page, at, D, ready }) => {
+      await page.goto(`${BASE}/teams`, { waitUntil: 'networkidle' });
+      await page.getByText(/team management|talent acquisition/i).first().waitFor({ timeout: 20000 }).catch(() => {});
+      await waitLoaded(page, 800);
+      const waitUntil = await ready(900);
+      await waitUntil(at('respects roles', 4, -0.3));
+      await zoomTo(page, page.getByText(/talent acquisition alpha/i).first(), 1.12, 900).catch(() => {});
+      await waitUntil(at('configured once', D - 3.5, -0.3));
+      await zoomReset(page);
+      await waitUntil(at('enforces them', D - 1));
       await waitUntil(D);
     },
   },
