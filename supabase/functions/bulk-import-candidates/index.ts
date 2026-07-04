@@ -124,6 +124,18 @@ Deno.serve(async (req) => {
           throw new Error(`Phone must be exactly 10 digits, got: ${phone}`);
         }
 
+        // VALIDATION 6: phone must be unique too — same person, different email
+        // is the most common duplicate shape in bulk files
+        const { data: existingPhone } = await supabase
+          .from('candidates')
+          .select('id, first_name, last_name')
+          .eq('phone', phone)
+          .maybeSingle();
+
+        if (existingPhone) {
+          throw new Error(`Phone already exists: ${phone} (${existingPhone.first_name} ${existingPhone.last_name})`);
+        }
+
         // Build candidate data
         const candidateData: any = {
           first_name: record.first_name.trim(),

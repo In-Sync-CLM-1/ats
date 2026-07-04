@@ -194,7 +194,40 @@ export default function CandidateForm() {
     },
   });
 
-  const onSubmit = (data: CandidateFormData) => {
+  // Duplicate guard: same phone or email = almost always the same person arriving
+  // through a second channel. Warn with a link to the existing record; saving
+  // again after the warning creates anyway (deliberate duplicates stay possible).
+  const [duplicateWarning, setDuplicateWarning] = useState<{ id: string; name: string; via: string } | null>(null);
+
+  const onSubmit = async (data: CandidateFormData) => {
+    if (!isEditing && !duplicateWarning) {
+      const phone = (data.phone || "").replace(/\D/g, "");
+      const checks = [];
+      if (data.email) checks.push(`email.eq.${data.email}`);
+      if (phone.length >= 10) checks.push(`phone.eq.${phone}`);
+      if (checks.length) {
+        const { data: existing } = await supabase
+          .from("candidates")
+          .select("id, first_name, last_name, email, phone")
+          .or(checks.join(","))
+          .limit(1)
+          .maybeSingle();
+        if (existing) {
+          const via = existing.email === data.email ? "email" : "phone number";
+          setDuplicateWarning({
+            id: existing.id,
+            name: `${existing.first_name} ${existing.last_name}`,
+            via,
+          });
+          toast({
+            title: "Possible duplicate",
+            description: `A candidate with this ${via} already exists. Review the warning above the Save button.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
     saveMutation.mutate(data);
   };
 
@@ -811,6 +844,23 @@ export default function CandidateForm() {
               </div>
             </div>
 
+            {duplicateWarning && (
+              <div className="border border-amber-300 bg-amber-50 rounded-lg p-4 text-sm">
+                <p className="font-semibold text-amber-900">Possible duplicate candidate</p>
+                <p className="text-amber-800 mt-1">
+                  <button
+                    type="button"
+                    className="underline font-medium"
+                    onClick={() => navigate(`/candidates/view/${duplicateWarning.id}`)}
+                  >
+                    {duplicateWarning.name}
+                  </button>{" "}
+                  already exists with this {duplicateWarning.via}. Open their profile to update it,
+                  or press "Create Anyway" if this is genuinely a different person.
+                </p>
+              </div>
+            )}
+
             <div className="flex justify-end gap-4">
               <Button
                 type="button"
@@ -819,8 +869,12 @@ export default function CandidateForm() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Saving..." : isEditing ? "Update Candidate" : "Create Candidate"}
+              <Button type="submit" disabled={saveMutation.isPending} variant={duplicateWarning ? "destructive" : "default"}>
+                {saveMutation.isPending
+                  ? "Saving..."
+                  : duplicateWarning
+                    ? "Create Anyway"
+                    : isEditing ? "Update Candidate" : "Create Candidate"}
               </Button>
             </div>
           </form>
