@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, Users, Download, Upload, UserPlus, Filter, X, Phone, History, Star, Clock, Briefcase, IndianRupee, Calendar, MessageCircle } from "lucide-react";
@@ -277,11 +278,38 @@ const Candidates = () => {
         .order("created_at", { ascending: false })
         .range(from, to);
 
+      // (AI scores for the visible rows are fetched separately below)
+
       const { data, error, count } = await query;
 
       return { data: data as Candidate[] | null, count, error };
     },
   });
+
+  // AI scores for the visible rows — surfaced right in the list, not on a separate page
+  const { data: aiScores } = useQuery({
+    queryKey: ["candidate-ai-scores-page", candidates?.map((c) => c.id).join(",")],
+    queryFn: async () => {
+      const ids = candidates?.map((c) => c.id) ?? [];
+      if (!ids.length) return {};
+      const { data } = await supabase
+        .from("candidate_ai_scores")
+        .select("candidate_id, score, category")
+        .in("candidate_id", ids);
+      const map: Record<string, { score: number; category: string }> = {};
+      for (const s of data ?? []) map[s.candidate_id] = { score: s.score, category: s.category };
+      return map;
+    },
+    enabled: !!candidates?.length,
+  });
+
+  const AI_SCORE_CHIP: Record<string, string> = {
+    hire: "bg-green-100 text-green-800 border-green-300",
+    strong: "bg-blue-100 text-blue-800 border-blue-300",
+    promising: "bg-amber-100 text-amber-800 border-amber-300",
+    weak: "bg-orange-100 text-orange-800 border-orange-300",
+    unqualified: "bg-red-100 text-red-800 border-red-300",
+  };
 
   const { delete: deleteCandidate, isDeleting } = useCrudMutation<Candidate>({
     queryKey: ["candidates"],
@@ -813,6 +841,7 @@ const Candidates = () => {
                   <TableHead>Recruiter</TableHead>
                   
                   <TableHead>Rating</TableHead>
+                  <TableHead>AI Score</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -918,6 +947,18 @@ const Candidates = () => {
                     </TableCell>
                     
                     <TableCell>{renderStarRating(candidate.rating)}</TableCell>
+                    <TableCell>
+                      {aiScores?.[candidate.id] ? (
+                        <Badge
+                          variant="outline"
+                          className={`text-xs font-semibold whitespace-nowrap ${AI_SCORE_CHIP[aiScores[candidate.id].category] || ""}`}
+                        >
+                          {aiScores[candidate.id].score} · {aiScores[candidate.id].category}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {getStatusBadge(candidate.current_status)}
                     </TableCell>
