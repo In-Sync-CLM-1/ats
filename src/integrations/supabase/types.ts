@@ -1310,6 +1310,84 @@ export type Database = {
         }
         Relationships: []
       }
+      interviews: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          feedback: string | null
+          id: string
+          interviewer_email: string | null
+          interviewer_name: string | null
+          mandate_id: string | null
+          meeting_link: string | null
+          mode: string
+          org_id: string
+          rating: number | null
+          round_name: string
+          scheduled_at: string
+          status: string
+          updated_at: string
+          verdict: string | null
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          feedback?: string | null
+          id?: string
+          interviewer_email?: string | null
+          interviewer_name?: string | null
+          mandate_id?: string | null
+          meeting_link?: string | null
+          mode?: string
+          org_id: string
+          rating?: number | null
+          round_name?: string
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+          verdict?: string | null
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          feedback?: string | null
+          id?: string
+          interviewer_email?: string | null
+          interviewer_name?: string | null
+          mandate_id?: string | null
+          meeting_link?: string | null
+          mode?: string
+          org_id?: string
+          rating?: number | null
+          round_name?: string
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interviews_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interviews_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "mandates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           client_id: string | null

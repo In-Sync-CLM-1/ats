@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/contexts/OrgContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OfferCard } from "@/components/OfferCard";
+import { InterviewsCard } from "@/components/InterviewsCard";
 import { CallHistory } from "@/components/CallHistory";
 import { CandidateScoreCard } from "@/components/CandidateScoreCard";
 import { AIScreeningButton } from "@/components/AIScreeningButton";
@@ -411,6 +412,12 @@ export default function CandidateDetail() {
               />
             </CardContent>
           </Card>
+          <InterviewsCard
+            candidateId={candidate.id}
+            candidateName={`${candidate.first_name} ${candidate.last_name}`}
+            candidateEmail={candidate.email}
+          />
+
           <OfferCard candidateId={candidate.id} defaultCtc={candidate.expected_ctc_lakhs} />
 
           <Card>
