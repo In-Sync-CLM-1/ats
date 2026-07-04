@@ -420,6 +420,30 @@ for (const [fn, ln, emailSlug, phone, desig, cur, exp, stage, src, pos, notice, 
 }
 console.log(`   ${bulkCandidateIds.length} bulk candidates`);
 
+// ── 10b. AI scores for every candidate — the list's AI Score column is live ──
+console.log('10b. AI scores for all candidates...');
+const CATEGORY_OF = (s) => (s >= 80 ? 'hire' : s >= 70 ? 'strong' : s >= 55 ? 'promising' : s >= 40 ? 'weak' : 'unqualified');
+const allScoreTargets = [
+  ...deskIds.slice(1).map((cid, i) => ({ cid, base: 52 + ((i * 7) % 31) })),
+  ...bulkCandidateIds.map((b, i) => ({ cid: b.cid, base: 44 + ((i * 11) % 43) })),
+];
+for (const { cid, base } of allScoreTargets) {
+  const score = Math.min(92, base);
+  const cat = CATEGORY_OF(score);
+  await upsert('candidate_ai_scores', {
+    candidate_id: cid, org_id: ORG_ID, score, category: cat,
+    breakdown: {
+      'Interview Stage': Math.min(45, Math.round(score * 0.45)),
+      'Call Engagement': Math.min(25, Math.round(score * 0.25)),
+      'Profile Completeness': Math.min(20, Math.round(score * 0.2)),
+      'Application Quality': Math.min(10, Math.round(score * 0.1)),
+    },
+    reasoning: 'Scored from pipeline stage, call engagement, profile depth, and application quality.',
+    scored_at: new Date().toISOString(),
+  }, 'candidate_id');
+}
+console.log(`   ${allScoreTargets.length} scores upserted`);
+
 // ── 11. Call logs — historical spread over the last 30 days ──────────────────
 console.log('11. Call logs...');
 // Old takes seeded calls on fixed June dates; wipe demo phone logs (keep Priya's)
@@ -563,10 +587,19 @@ else {
 
 // ── 13. Onboarding submission for Priya ───────────────────────────────────────
 console.log('13. Onboarding submission...');
+// Full verification pack: identity + exit paperwork + salary trail, matching
+// what HR actually collects for a new hire (not just PAN/Aadhaar/bank).
 const aiReview = {
-  risk_score: 12, recommendation: 'Approve',
-  findings: ['PAN format valid (ABCPS1234F)', 'Aadhaar format valid (12 digits)', 'IFSC HDFC0001234 is valid', 'Bank account complete', 'No fraud signals detected'],
-  summary: 'All documents appear complete and valid. Identity details internally consistent. Recommend approval.',
+  risk_score: 12, recommendation: 'approve',
+  findings: [
+    { category: 'PAN Card', severity: 'low', description: 'Format valid (ABCPS1234F); name matches the application exactly.' },
+    { category: 'Aadhaar', severity: 'low', description: '12-digit format valid; address consistent with present address on file.' },
+    { category: 'Bank Account', severity: 'low', description: 'HDFC account verified; IFSC HDFC0001234 resolves to Koramangala branch.' },
+    { category: 'Resignation & Relieving Letter', severity: 'low', description: 'Resignation accepted by Zenlabs Software; relieving letter signed and dated — exit confirmed.' },
+    { category: 'Salary Slips — last 3 months', severity: 'low', description: 'Apr–Jun slips consistent with declared ₹8.0L CTC; employer name matches; no gaps.' },
+    { category: 'Bank Credit Match', severity: 'low', description: 'Salary credits in the bank statement match slip amounts and dates for all three months.' },
+  ],
+  summary: 'All documents are complete and internally consistent — identity, employment exit, and salary trail reconcile end to end. No fraud signals. Recommend approval.',
 };
 const ex13 = await get(`onboarding_submissions?candidate_id=eq.${candidateId}&select=id`);
 if (ex13?.length) {

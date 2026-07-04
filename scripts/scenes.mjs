@@ -238,7 +238,7 @@ export const SCENES = [
   // ── S4: One pipeline — search WORKS, rated, assigned ─────────────────────────
   {
     name: 's4-pipeline', account: ACCT.admin,
-    narration: "She lands in one pipeline with every other candidate — referred, sourced, or imported. Search for Priya — there she is: rated, tagged to the TechCorp role, and already assigned to her recruiter, Aarav. Nothing sits in a spreadsheet, and nobody picks from a pile.",
+    narration: "She lands in one pipeline with every other candidate — referred, sourced, or imported. Search for Priya — there she is: scored by the A.I., rated, tagged to the TechCorp role, and already assigned to her recruiter, Aarav. Nothing sits in a spreadsheet, and nobody picks from a pile.",
     beats: async ({ page, at, D, ready }) => {
       await page.goto(`${BASE}/candidates`, { waitUntil: 'networkidle' });
       await page.getByText(/candidates/i).first().waitFor({ timeout: 20000 });
@@ -283,19 +283,17 @@ export const SCENES = [
   // ── S6: AI candidate score — is she worth the time? ──────────────────────────
   {
     name: 's6-ai-score', account: ACCT.recruiter,
-    narration: "First question on any desk: who's worth the time? The AI has already answered. Sixty-one out of a hundred — Promising — broken down by interview stage, call engagement, profile depth, and application quality. Aarav knows where to focus before he reads a line of the résumé.",
+    narration: "He opens her profile, and the first question on any desk is already answered, right at the top: is she worth the time? Sixty-one out of a hundred — Promising — broken down by interview stage, call engagement, profile depth, and application quality. No separate report to open; it lives with her details.",
     beats: async ({ page, at, D, ready }) => {
       await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' });
       await page.getByText('Priya').first().waitFor({ timeout: 20000 });
-      const waitUntil = await ready(900);
-      const aiTab = page.getByRole('tab', { name: 'AI Insights' });
-      await aiTab.waitFor({ timeout: 8000 }).catch(() => {});
-      await clickLocator(page, aiTab, { dur: 500 }).catch(() => aiTab.click().catch(() => {}));
       await page.getByText(/promising/i).first().waitFor({ timeout: 8000 }).catch(() => {});
-      await waitUntil(at('the ai has already answered', 6, -0.3));
-      await zoomTo(page, page.getByText(/interview stage/i).first(), 1.15, 900).catch(() => {});
-      await waitUntil(at('application quality', D - 3));
+      const waitUntil = await ready(900);
+      await waitUntil(at('already answered', 5, -0.3));
+      await zoomTo(page, page.getByText(/ai candidate score/i).first(), 1.12, 900).catch(() => {});
+      await waitUntil(at('application quality', D - 4));
       await zoomReset(page);
+      await waitUntil(at('lives with her details', D - 1));
       await waitUntil(D);
     },
   },
@@ -321,14 +319,14 @@ export const SCENES = [
   // ── S8: AI voice call — click lands, payoff HELD on screen ───────────────────
   {
     name: 's8-ai-call', account: ACCT.recruiter,
-    narration: "The repetitive calls — reminders, confirmations, follow-ups — don't touch his desk at all. They go to the AI voice agent. One click. It dials Priya, runs the conversation, and captures everything — while Aarav works the rest of his queue. Look: dialing… and the call is away. No scheduling. No blocked calendar.",
+    narration: "The repetitive calls — reminders, confirmations, follow-ups — don't touch his desk at all. They go to the A.I. voice agent. One click. Watch the dialer: it's ringing Priya right now, runs the conversation, and captures everything — while Aarav works the rest of his queue. And the call is away. No scheduling. No blocked calendar.",
     beats: async ({ page, at, D, ready }) => {
-      // Video-only stub: the app's real UI states (Dialing… → AI Call Initiated)
-      // play out without placing a live Bolna call.
+      // Video-only stub: the app's real UI states (dialer console → AI Call
+      // Initiated) play out without placing a live Bolna call.
       await page.route('**/functions/v1/ai-screen-candidate', async (route) => {
         const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
         if (route.request().method() === 'OPTIONS') { await route.fulfill({ status: 204, headers: cors }); return; }
-        await new Promise((r) => setTimeout(r, 2200)); // hold on "Dialing…" so it reads
+        await new Promise((r) => setTimeout(r, 4500)); // hold the dialer console so it reads
         await route.fulfill({
           status: 200,
           headers: { ...cors, 'content-type': 'application/json' },
@@ -337,22 +335,23 @@ export const SCENES = [
       });
       await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' });
       await page.getByText('Priya').first().waitFor({ timeout: 20000 });
-      const waitUntil = await ready(800);
-      const aiTab = page.getByRole('tab', { name: 'AI Insights' });
-      await aiTab.waitFor({ timeout: 8000 }).catch(() => {});
-      await clickLocator(page, aiTab, { dur: 500 }).catch(() => aiTab.click().catch(() => {}));
       await page.getByText(/promising/i).first().waitFor({ timeout: 8000 }).catch(() => {});
+      const waitUntil = await ready(800);
       await page.getByText(/ai voice calls/i).first().scrollIntoViewIfNeeded().catch(() => {});
       await page.waitForTimeout(500);
       await zoomTo(page, page.getByText(/ai voice calls/i).first(), 1.12, 900).catch(() => {});
-      await waitUntil(at('one click', 12, -0.4));
-      // The payoff, with time to breathe: click → Dialing… (2.2s) → AI Call Initiated.
+      await waitUntil(at('one click', 11, -0.4));
+      // The payoff: click → dialer console (pulsing rings, name + number) → AI Call Initiated.
       const startBtn = page.getByRole('button', { name: /start ai call/i }).first();
       await clickLocator(page, startBtn, { dur: 600 }).catch(() => startBtn.click().catch(() => {}));
+      await page.getByText(/dialing priya/i).first().waitFor({ timeout: 5000 }).catch(() => {});
+      await zoomReset(page);
+      await zoomTo(page, page.getByText(/dialing priya/i).first(), 1.2, 700).catch(() => {});
+      await waitUntil(at('and the call is away', D - 5, -0.3));
       await page.getByText(/ai call initiated/i).first().waitFor({ timeout: 10000 }).catch(() => {});
       await zoomReset(page);
-      await zoomTo(page, page.getByText(/ai call initiated/i).first(), 1.15, 800).catch(() => {});
-      await waitUntil(at('no scheduling', D - 2));
+      await zoomTo(page, page.getByText(/ai call initiated/i).first(), 1.15, 700).catch(() => {});
+      await waitUntil(at('no scheduling', D - 1.5));
       await zoomReset(page);
       await waitUntil(D);
     },
@@ -427,10 +426,10 @@ export const SCENES = [
     },
   },
 
-  // ── S12: TENSION — she goes quiet; the system catches it ─────────────────────
+  // ── S12a: TENSION — she goes quiet; the system flags it ──────────────────────
   {
-    name: 's12-tension', account: ACCT.recruiter,
-    narration: "Then… the part every recruiter dreads. The offer is out — and Priya goes quiet. Days pass. This silence is exactly where most hires die. Not here. Her follow-up is already flagged on Aarav's desk, and the AI agent redials her before anything slips. Minutes later, it's back in writing: joining confirmed, counter-offer declined. The save happened on time — because the system was keeping watch, not somebody's memory.",
+    name: 's12a-silence', account: ACCT.recruiter,
+    narration: "Then… the part every recruiter dreads. The offer is out — and Priya goes quiet. Days pass. This silence is exactly where most hires die. Not here. Her follow-up is already flagged on Aarav's desk — and the A.I. agent quietly redials her before anything slips.",
     beats: async ({ page, at, D, ready }) => {
       await page.goto(`${BASE}/my-desk`, { waitUntil: 'networkidle' });
       await page.getByText(/my desk|action today/i).first().waitFor({ timeout: 20000 });
@@ -439,31 +438,43 @@ export const SCENES = [
       await waitUntil(at('goes quiet', 6, -0.3));
       await page.getByText('Priya Sharma').first().scrollIntoViewIfNeeded().catch(() => {});
       await zoomTo(page, page.getByText('Priya Sharma').first(), 1.18, 900).catch(() => {});
-      await waitUntil(at('already flagged', D - 16, -0.2));
+      await waitUntil(at('quietly redials', D - 2));
       await zoomReset(page);
-      // The AI redial happens now — the confirmation call lands in her history live.
+      await waitUntil(D);
+    },
+  },
+
+  // ── S12b: THE SAVE — confirmation lands in writing (page load happens in the
+  //          trimmed lead, so no loaders appear on camera) ─────────────────────
+  {
+    name: 's12b-save', account: ACCT.recruiter,
+    narration: "Minutes later, it's back in writing. Joining confirmed. Counter-offer declined. Relieving letter in process. The save happened on time — because the system was keeping watch, not somebody's memory.",
+    beats: async ({ page, at, D, ready }) => {
+      // The AI redial "happens" now — the confirmation call lands in her history.
       await logConfirmationCall();
+      // Everything below runs BEFORE ready(): the navigation, tab switch, and
+      // data load are all trimmed out of the recording — no loaders on camera.
       await page.goto(candidateId ? candidateUrl(candidateId) : `${BASE}/candidates`, { waitUntil: 'networkidle' }).catch(() => {});
       await page.getByText('Priya').first().waitFor({ timeout: 20000 }).catch(() => {});
       const callTab = page.getByRole('tab', { name: 'Call History' });
       await callTab.waitFor({ timeout: 8000 }).catch(() => {});
-      await clickLocator(page, callTab, { dur: 500 }).catch(() => callTab.click().catch(() => {}));
+      await callTab.click().catch(() => {});
       await waitLoaded(page, 700);
       await openAiSummary(page);
       await page.getByText(/joining confirmed/i).first().waitFor({ timeout: 6000 }).catch(() => {});
-      // Keep-alive hold: something in the app intermittently collapses the panel
-      // mid-recording — check every second and re-open instantly so it stays on
-      // screen for the whole beat.
-      const tIn = at('in writing', D - 7, -0.3);
-      const tKeep = at('keeping watch', D - 1.2);
-      for (let t = Math.min(tIn, tKeep); t < tKeep; t += 1) {
+      const waitUntil = await ready(600);
+      // Keep-alive hold: re-open instantly if anything collapses the panel.
+      const tKeep = at('keeping watch', D - 1.5);
+      await zoomTo(page, page.getByText(/ai analysis/i).first(), 1.12, 900).catch(() => {});
+      for (let t = 3; t < tKeep; t += 1) {
         await waitUntil(t);
         if (!(await page.getByText('AI Analysis').first().isVisible().catch(() => false))) {
-          console.log('  [s12] panel collapsed — re-opening');
+          console.log('  [s12b] panel collapsed — re-opening');
+          await zoomReset(page);
           await openAiSummary(page);
+          await zoomTo(page, page.getByText(/ai analysis/i).first(), 1.12, 600).catch(() => {});
         }
       }
-      await zoomTo(page, page.getByText(/ai analysis/i).first(), 1.12, 900).catch(() => {});
       await waitUntil(tKeep);
       await zoomReset(page);
       await waitUntil(D);
@@ -473,7 +484,7 @@ export const SCENES = [
   // ── S13: Close it out — onboarding + AI document verify ──────────────────────
   {
     name: 's13-onboarding', account: ACCT.admin,
-    narration: "'Yes' still isn't 'joined' until the paperwork clears. Priya uploads her PAN, Aadhaar, and bank details once. The AI verifies every document — formats, consistency, fraud signals — and recommends approval. One click, and she's officially onboarded. Requirement opened, hire closed, record complete.",
+    narration: "'Yes' still isn't 'joined' until the paperwork clears. Priya uploads everything once — PAN, Aadhaar, bank details, her resignation and relieving letter, and three months of salary slips. The A.I. verifies every document: identity checked, exit paperwork confirmed, salary credits matched against her bank statement. One click, and she's officially onboarded. Requirement opened, hire closed, record complete.",
     beats: async ({ page, at, D, ready }) => {
       await page.goto(`${BASE}/hr-onboarding`, { waitUntil: 'networkidle' });
       await page.getByText(/onboarding/i).first().waitFor({ timeout: 20000 });
@@ -484,8 +495,11 @@ export const SCENES = [
       await clickLocator(page, eye, { dur: 600 }).catch(() => eye.click().catch(() => {}));
       await page.waitForTimeout(1300);
       await waitLoaded(page, 500);
-      await waitUntil(at('verifies every document', D - 8));
-      await zoomTo(page, page.getByText(/risk score|recommend/i).first(), 1.1, 800).catch(() => {});
+      await waitUntil(at('verifies every document', D - 11));
+      // Frame the widened findings checklist: identity + exit paperwork + salary trail
+      await page.getByText(/resignation & relieving/i).first().scrollIntoViewIfNeeded().catch(() => {});
+      await page.waitForTimeout(400);
+      await zoomTo(page, page.getByText(/resignation & relieving/i).first(), 1.1, 800).catch(() => {});
       await waitUntil(at('one click', D - 4.5));
       await zoomReset(page);
       const ap = page.getByRole('button', { name: /approve/i }).first();
@@ -519,7 +533,7 @@ export const SCENES = [
   // ── S15: Why In-Sync wins — differentiation ──────────────────────────────────
   {
     name: 's15-diff', account: ACCT.guest,
-    narration: "Most tools automate the front of the funnel — sourcing and screening. In-Sync ATS closes the back, where hires are actually lost. AI that makes the reminder calls, does the data entry, and verifies every document. End to end. Built for India. One platform.",
+    narration: "Most tools automate the front of the funnel — sourcing and screening. In-Sync ATS closes the back, where hires are actually lost. An A.I. that makes the reminder calls, does the data entry, and verifies every document. End to end. Built for India. One platform.",
     beats: async ({ page, D, ready }) => {
       await page.setContent(DIFF_HTML, { waitUntil: 'load' });
       const waitUntil = await ready(300);
