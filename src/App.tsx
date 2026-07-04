@@ -42,6 +42,7 @@ import CandidateOnboardingForm from "./pages/CandidateOnboardingForm";
 import LandingDemo from "./pages/LandingDemo";
 import CareersPage from "./pages/CareersPage";
 import ClientShortlist from "./pages/ClientShortlist";
+import OfferPage from "./pages/OfferPage";
 import MyDesk from "./pages/MyDesk";
 import PlatformAdminLayout from "./components/platform/PlatformAdminLayout";
 import PlatformAdminDashboard from "./pages/platform/PlatformAdminDashboard";
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/apply/:referralCode" element={<PublicApply />} />
               <Route path="/careers/:slug" element={<CareersPage />} />
               <Route path="/shortlist/:token" element={<ClientShortlist />} />
+              <Route path="/offer/:token" element={<OfferPage />} />
               <Route path="/join/:slug" element={<CandidateOnboardingForm />} />
               <Route path="/landing-demo" element={<LandingDemo />} />
               <Route path="/create-org" element={<CreateOrg />} />

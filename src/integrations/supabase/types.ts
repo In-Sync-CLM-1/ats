@@ -1701,6 +1701,72 @@ export type Database = {
           },
         ]
       }
+      offers: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          created_by: string | null
+          ctc_lakhs: number
+          decided_at: string | null
+          decline_reason: string | null
+          expiry_date: string
+          id: string
+          joining_date: string
+          mandate_id: string | null
+          notes: string | null
+          org_id: string
+          status: string
+          token: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          created_by?: string | null
+          ctc_lakhs: number
+          decided_at?: string | null
+          decline_reason?: string | null
+          expiry_date: string
+          id?: string
+          joining_date: string
+          mandate_id?: string | null
+          notes?: string | null
+          org_id: string
+          status?: string
+          token: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          created_by?: string | null
+          ctc_lakhs?: number
+          decided_at?: string | null
+          decline_reason?: string | null
+          expiry_date?: string
+          id?: string
+          joining_date?: string
+          mandate_id?: string | null
+          notes?: string | null
+          org_id?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "mandates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_documents: {
         Row: {
           created_at: string
@@ -3861,6 +3927,7 @@ export type Database = {
           updated_count: number
         }[]
       }
+      get_offer: { Args: { p_token: string }; Returns: Json }
       get_project_creator_name: { Args: { _user_id: string }; Returns: string }
       get_user_designation_level: {
         Args: { _user_id: string }
@@ -3898,6 +3965,10 @@ export type Database = {
       process_bulk_import_batch: {
         Args: { p_import_id: string; p_table_name: string; p_user_id: string }
         Returns: Json
+      }
+      respond_to_offer: {
+        Args: { p_decision: string; p_reason?: string; p_token: string }
+        Returns: undefined
       }
       submit_client_feedback: {
         Args: {

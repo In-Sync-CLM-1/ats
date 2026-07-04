@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/contexts/OrgContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { OfferCard } from "@/components/OfferCard";
 import { CallHistory } from "@/components/CallHistory";
 import { CandidateScoreCard } from "@/components/CandidateScoreCard";
 import { AIScreeningButton } from "@/components/AIScreeningButton";
@@ -410,6 +411,8 @@ export default function CandidateDetail() {
               />
             </CardContent>
           </Card>
+          <OfferCard candidateId={candidate.id} defaultCtc={candidate.expected_ctc_lakhs} />
+
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
