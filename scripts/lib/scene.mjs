@@ -11,7 +11,9 @@ import { login } from './app.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, '..', 'recordings', 'scenes');
 const env = loadEnv(new URL('../../.env', import.meta.url));
-const VP = { width: 1366, height: 768 };
+// Full-HD recording: tables get room to breathe (no column collisions at
+// 1366px) and the whole UI reads at a natural zoom level.
+const VP = { width: 1920, height: 1080 };
 // White-label logo (TechCorp) injected into the app sidebar at record time.
 const SIDEBAR_LOGO = 'data:image/png;base64,' +
   readFileSync(join(here, '..', '..', 'src', 'assets', 'techcorp-logo-white.png')).toString('base64');

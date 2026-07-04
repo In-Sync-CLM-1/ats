@@ -95,23 +95,23 @@ const SLIDE_HEAD = `<style>
                radial-gradient(800px 500px at 95% 115%,rgba(37,99,235,.30),transparent 55%),
                linear-gradient(135deg,#0a0f1e 0%,#0d1830 55%,#101f42 100%)}
   .wrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:56px}
-  .logo{height:44px;width:auto;margin-bottom:34px;opacity:0;animation:fade .7s ease .1s forwards}
-  .stat{color:#60a5fa;font-weight:800;font-size:19px;letter-spacing:.02em;margin-bottom:16px;opacity:0;animation:fade .7s ease .3s forwards}
-  h1{font-size:58px;line-height:1.06;font-weight:800;letter-spacing:-.02em;opacity:0;transform:translateY(10px);animation:rise .8s cubic-bezier(.2,.7,.2,1) .45s forwards}
+  .logo{height:58px;width:auto;margin-bottom:40px;opacity:0;animation:fade .7s ease .1s forwards}
+  .stat{color:#60a5fa;font-weight:800;font-size:25px;letter-spacing:.02em;margin-bottom:20px;opacity:0;animation:fade .7s ease .3s forwards}
+  h1{font-size:74px;line-height:1.06;font-weight:800;letter-spacing:-.02em;opacity:0;transform:translateY(10px);animation:rise .8s cubic-bezier(.2,.7,.2,1) .45s forwards}
   h1 .g{color:#60a5fa}
-  .tag{margin-top:20px;font-size:21px;color:#9fb0d0;opacity:0;animation:fade .7s ease .7s forwards}
-  .bar{width:0;height:4px;background:#3b82f6;border-radius:3px;margin:30px auto 0;animation:grow .8s ease 1s forwards}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px;margin-top:12px}
-  .card{background:rgba(255,255,255,.05);border:1px solid rgba(96,165,250,.22);border-radius:16px;padding:20px 22px;text-align:left;
-    display:flex;gap:14px;align-items:flex-start;opacity:0;transform:translateY(10px);animation:rise .6s cubic-bezier(.2,.7,.2,1) forwards}
-  .card .n{color:#60a5fa;font-weight:800;font-size:22px;flex:none}
-  .card .t{font-weight:700;font-size:19px}.card .s{color:#9fb0d0;font-size:15px;margin-top:3px}
-  .cta{margin-top:30px;display:inline-block;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:700;font-size:22px;
-    padding:16px 34px;border-radius:999px;box-shadow:0 12px 30px rgba(37,99,235,.4);opacity:0;animation:rise .7s ease .8s forwards}
-  .num{margin-top:26px;display:flex;gap:14px;justify-content:center;opacity:0;animation:fade .7s ease .95s forwards}
-  .num .chip{background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.35);border-radius:12px;padding:10px 18px;font-size:16px;color:#bcd3f7}
-  .num .chip b{color:#fff;font-size:19px}
-  .foot{margin-top:24px;color:#8296b8;font-size:15px;letter-spacing:.02em;opacity:0;animation:fade .7s ease 1.1s forwards}
+  .tag{margin-top:26px;font-size:27px;color:#9fb0d0;opacity:0;animation:fade .7s ease .7s forwards}
+  .bar{width:0;height:5px;background:#3b82f6;border-radius:3px;margin:36px auto 0;animation:grow .8s ease 1s forwards}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1180px;margin-top:16px}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(96,165,250,.22);border-radius:18px;padding:26px 28px;text-align:left;
+    display:flex;gap:16px;align-items:flex-start;opacity:0;transform:translateY(10px);animation:rise .6s cubic-bezier(.2,.7,.2,1) forwards}
+  .card .n{color:#60a5fa;font-weight:800;font-size:28px;flex:none}
+  .card .t{font-weight:700;font-size:24px}.card .s{color:#9fb0d0;font-size:19px;margin-top:4px}
+  .cta{margin-top:38px;display:inline-block;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:700;font-size:28px;
+    padding:20px 44px;border-radius:999px;box-shadow:0 12px 30px rgba(37,99,235,.4);opacity:0;animation:rise .7s ease .8s forwards}
+  .num{margin-top:32px;display:flex;gap:18px;justify-content:center;opacity:0;animation:fade .7s ease .95s forwards}
+  .num .chip{background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.35);border-radius:14px;padding:13px 24px;font-size:20px;color:#bcd3f7}
+  .num .chip b{color:#fff;font-size:24px}
+  .foot{margin-top:30px;color:#8296b8;font-size:19px;letter-spacing:.02em;opacity:0;animation:fade .7s ease 1.1s forwards}
   @keyframes fade{to{opacity:1}}@keyframes rise{to{opacity:1;transform:translateY(0)}}@keyframes grow{to{width:120px}}
 </style>`;
 
@@ -122,6 +122,7 @@ const OPEN_HTML = `<!doctype html><html><head><meta charset="utf-8">${SLIDE_HEAD
     <h1>Hires aren't lost at sourcing.<br>They're lost <span class="g">between shortlisted and joined.</span></h1>
     <div class="tag">Watch TechCorp close that gap — one hire, end to end.</div>
     <div class="bar"></div>
+    <div class="foot">TechCorp Solutions is a client of <b style="color:#e5e9f5">In-Sync ATS</b> — this demo runs on their live workspace.</div>
   </div></body></html>`;
 
 const DIFF_CARDS = [
@@ -148,7 +149,7 @@ const CTA_HTML = `<!doctype html><html><head><meta charset="utf-8">${SLIDE_HEAD}
       <div class="chip"><b>0</b> missed follow-ups</div>
     </div>
     <div class="cta">Book a demo →</div>
-    <div class="foot">TechCorp runs on In-Sync ATS · part of the In-Sync suite</div>
+    <div class="foot">TechCorp Solutions is a client of In-Sync ATS · part of the In-Sync suite by Prosync</div>
   </div></body></html>`;
 
 export const SCENES = [
@@ -156,7 +157,7 @@ export const SCENES = [
   // ── S0: Cold open — the hook ─────────────────────────────────────────────────
   {
     name: 's0-open', account: ACCT.guest,
-    narration: "Sixty-two percent of candidates ghost. And most hires aren't lost at sourcing — they're lost in the gap between shortlisted and joined. This is how TechCorp closes that gap. One hire, end to end — starting now.",
+    narration: "Sixty-two percent of candidates ghost. And most hires aren't lost at sourcing — they're lost in the gap between shortlisted and joined. This is how TechCorp Solutions — a client running on In-Sync ATS — closes that gap. One hire, end to end — starting now.",
     beats: async ({ page, D, ready }) => {
       await page.setContent(OPEN_HTML, { waitUntil: 'load' });
       const waitUntil = await ready(300);
@@ -222,8 +223,11 @@ export const SCENES = [
           await page.waitForTimeout(600);
         }
       }
-      await page.mouse.wheel(0, 380);
-      await page.waitForTimeout(500);
+      // No mouse.wheel here — window scrolling drags the sidebar up and leaves
+      // white space beneath it on camera. scrollIntoViewIfNeeded only scrolls
+      // when the target is actually off screen (rare at 1080p).
+      await page.getByText(/basic information/i).first().scrollIntoViewIfNeeded().catch(() => {});
+      await page.waitForTimeout(400);
       await zoomTo(page, page.getByText(/basic information/i).first(), 1.1, 900).catch(() => {});
       await waitUntil(at('not one keystroke', D - 1.2));
       await zoomReset(page);
@@ -339,7 +343,6 @@ export const SCENES = [
       await clickLocator(page, aiTab, { dur: 500 }).catch(() => aiTab.click().catch(() => {}));
       await page.getByText(/promising/i).first().waitFor({ timeout: 8000 }).catch(() => {});
       await page.getByText(/ai voice calls/i).first().scrollIntoViewIfNeeded().catch(() => {});
-      await page.mouse.wheel(0, 200);
       await page.waitForTimeout(500);
       await zoomTo(page, page.getByText(/ai voice calls/i).first(), 1.12, 900).catch(() => {});
       await waitUntil(at('one click', 12, -0.4));
@@ -504,10 +507,9 @@ export const SCENES = [
       await waitLoaded(page, 800);
       const waitUntil = await ready(1000);
       await waitUntil(at('multiply it across the team', 5, -0.3));
-      await page.mouse.wheel(0, 220);
-      await page.waitForTimeout(500);
-      const t = page.locator('table').first().or(page.locator('.grid').nth(1));
-      await zoomTo(page, t, 1.12, 900).catch(() => {});
+      // No window scroll (it drags the sidebar up on camera) — zoom the
+      // leaderboard card instead; at 1080p it is already in frame.
+      await zoomTo(page, page.getByText(/recruiter leaderboard/i).first(), 1.12, 900).catch(() => {});
       await waitUntil(at('becomes a number', D - 1.2));
       await zoomReset(page);
       await waitUntil(D);

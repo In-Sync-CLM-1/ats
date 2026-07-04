@@ -1,7 +1,7 @@
 // Injected, recordable cursor with human-like easing + click ripple.
 // Lives on <html> so page zoom (which scales <body>) doesn't move it.
 
-export async function installCursor(page, startX = 683, startY = 384) {
+export async function installCursor(page, startX = 960, startY = 540) {
   await page.evaluate(({ startX, startY }) => {
     if (document.getElementById('__cur')) return;
     const c = document.createElement('div');
