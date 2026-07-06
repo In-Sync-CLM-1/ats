@@ -323,7 +323,9 @@ export default function CandidateDetail() {
                       {resumeUrl.toLowerCase().endsWith('.pdf') ? (
                         <iframe src={resumeUrl} className="w-full h-[560px]" title="Resume Preview" />
                       ) : resumeUrl.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i) ? (
-                        <img src={resumeUrl} alt="Resume" className="w-full max-h-[560px] object-contain" />
+                        <div className="max-h-[560px] overflow-auto">
+                          <img src={resumeUrl} alt="Resume" className="w-full" />
+                        </div>
                       ) : (
                         <div className="flex flex-col items-center justify-center h-[240px] text-muted-foreground">
                           <FileText className="h-12 w-12 mb-3" />
