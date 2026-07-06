@@ -293,34 +293,57 @@ export default function CandidateDetail() {
           <TabsTrigger value="resume">Resume</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="details" className="space-y-4 mt-4">
-          {/* AI insights live inline with the candidate's details — not on a separate tab */}
-          <CandidateScoreCard candidateId={candidate.id} />
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Contact Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {candidate.phone && (
-                <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{candidate.phone}</span>
-                </div>
-              )}
-              {candidate.email && (
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{candidate.email}</span>
-                </div>
-              )}
-              {candidate.current_location && (
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{candidate.current_location}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="details" className="mt-4">
+          {/* The candidate is the story: resume + substance on the left,
+              AI score and quick facts as a supporting right rail. */}
+          <div className="grid gap-4 items-start lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+          {(() => {
+            const primaryResume = resumes.find((r: any) => r.is_primary) || resumes[0];
+            const resumeUrl = primaryResume?.file_url || candidate.resume_url;
+            return (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Resume
+                    </CardTitle>
+                    {resumeUrl && (
+                      <Button variant="outline" size="sm" onClick={() => window.open(resumeUrl, '_blank')}>
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        Open
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {resumeUrl ? (
+                    <div className="border rounded-lg overflow-hidden bg-muted/50">
+                      {resumeUrl.toLowerCase().endsWith('.pdf') ? (
+                        <iframe src={resumeUrl} className="w-full h-[560px]" title="Resume Preview" />
+                      ) : resumeUrl.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i) ? (
+                        <img src={resumeUrl} alt="Resume" className="w-full max-h-[560px] object-contain" />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-[240px] text-muted-foreground">
+                          <FileText className="h-12 w-12 mb-3" />
+                          <p className="text-sm">Preview not available for this file type</p>
+                          <Button variant="link" onClick={() => window.open(resumeUrl, '_blank')}>
+                            Download to view
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-[160px] text-muted-foreground">
+                      <FileText className="h-10 w-10 mb-3 opacity-40" />
+                      <p className="text-sm">No resume uploaded yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           <Card>
             <CardHeader className="pb-3">
@@ -399,21 +422,6 @@ export default function CandidateDetail() {
             </Card>
           )}
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">AI Voice Calls</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Hand the repetitive calls to the AI voice agent — interview reminders, availability confirmations, and offer follow-ups. It calls, confirms, and logs every outcome to Call History automatically, so recruiters keep their time for the conversations that matter.
-              </p>
-              <AIScreeningButton
-                candidateId={candidate.id}
-                candidateName={`${candidate.first_name} ${candidate.last_name}`}
-                candidatePhone={candidate.phone}
-              />
-            </CardContent>
-          </Card>
           <InterviewsCard
             candidateId={candidate.id}
             candidateName={`${candidate.first_name} ${candidate.last_name}`}
@@ -478,23 +486,72 @@ export default function CandidateDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Application Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div>
-                <span className="font-medium">Applied on: </span>
-                {formatDate(candidate.application_date)}
-              </div>
-              {candidate.latest_disposition && (
+          </div>
+
+          <div className="space-y-4">
+            <CandidateScoreCard candidateId={candidate.id} />
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {candidate.phone && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{candidate.phone}</span>
+                  </div>
+                )}
+                {candidate.email && (
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="break-all">{candidate.email}</span>
+                  </div>
+                )}
+                {candidate.current_location && (
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{candidate.current_location}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">AI Voice Calls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Hand the repetitive calls to the AI voice agent — reminders, confirmations, follow-ups. It calls, confirms, and logs every outcome to Call History automatically.
+                </p>
+                <AIScreeningButton
+                  candidateId={candidate.id}
+                  candidateName={`${candidate.first_name} ${candidate.last_name}`}
+                  candidatePhone={candidate.phone}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Application Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
                 <div>
-                  <span className="font-medium">Last Disposition: </span>
-                  {candidate.latest_disposition}
+                  <span className="font-medium">Applied on: </span>
+                  {formatDate(candidate.application_date)}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                {candidate.latest_disposition && (
+                  <div>
+                    <span className="font-medium">Last Disposition: </span>
+                    {candidate.latest_disposition}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">

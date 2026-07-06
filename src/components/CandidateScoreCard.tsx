@@ -22,10 +22,10 @@ const CATEGORY_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 const BREAKDOWN_COLORS: Record<string, string> = {
-  "Interview Stage":    "bg-purple-500",
-  "Call Engagement":    "bg-blue-500",
-  "Profile Completeness": "bg-green-500",
-  "Application Quality":  "bg-amber-500",
+  "Interview Stage":    "[&>div]:bg-purple-500",
+  "Call Engagement":    "[&>div]:bg-blue-500",
+  "Profile Completeness": "[&>div]:bg-green-500",
+  "Application Quality":  "[&>div]:bg-amber-500",
 };
 
 const BREAKDOWN_MAX: Record<string, number> = {
@@ -84,18 +84,18 @@ export function CandidateScoreCard({ candidateId }: CandidateScoreCardProps) {
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5 text-purple-500" />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Sparkles className="h-4 w-4 text-purple-500" />
             AI Candidate Score
           </CardTitle>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => runScore(!score)}
             disabled={scoring || isLoading}
+            title={score ? "Refresh score" : "Score now"}
           >
-            <RefreshCw className={`h-4 w-4 mr-1 ${scoring ? "animate-spin" : ""}`} />
-            {score ? "Refresh" : "Score Now"}
+            <RefreshCw className={`h-4 w-4 ${scoring ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </CardHeader>
@@ -117,31 +117,31 @@ export function CandidateScoreCard({ candidateId }: CandidateScoreCardProps) {
         )}
 
         {!isLoading && score && cat && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-4xl font-bold">{score.score}</span>
-                <span className="text-lg text-muted-foreground">/ 100</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold">{score.score}</span>
+                <span className="text-sm text-muted-foreground">/ 100</span>
               </div>
               <Badge className={cat.className}>{cat.label}</Badge>
             </div>
 
-            <Progress value={score.score} className="h-3" />
+            <Progress value={score.score} className="h-2" />
 
             {breakdown && (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {Object.entries(breakdown).map(([key, val]) => {
                   const label = humanizeKey(key);
                   const max = BREAKDOWN_MAX[label] ?? 100;
                   return (
                     <div key={key}>
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-0.5">
                         <span>{label}</span>
                         <span>{val} / {max}</span>
                       </div>
                       <Progress
                         value={(val / max) * 100}
-                        className={`h-2 [&>div]:${BREAKDOWN_COLORS[label] || "bg-primary"}`}
+                        className={`h-1.5 ${BREAKDOWN_COLORS[label] || "[&>div]:bg-primary"}`}
                       />
                     </div>
                   );
@@ -150,7 +150,7 @@ export function CandidateScoreCard({ candidateId }: CandidateScoreCardProps) {
             )}
 
             {score.reasoning && (
-              <p className="text-sm text-muted-foreground border-l-2 border-purple-300 pl-3 italic">
+              <p className="text-xs text-muted-foreground border-l-2 border-purple-300 pl-2 italic">
                 {score.reasoning}
               </p>
             )}
