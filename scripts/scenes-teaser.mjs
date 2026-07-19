@@ -82,21 +82,22 @@ const SLIDE_HEAD = `<style>
 const HOOK_HTML = `<!doctype html><html><head><meta charset="utf-8">${SLIDE_HEAD}</head><body>
   <div class="wrap">
     <div class="logocard"><img src="${INSYNC_LOGO}"/></div>
-    <div class="stat">62% of candidates ghost.</div>
+    <div class="stat">In-Sync ATS · Applicant Tracking</div>
     <h1>Hires aren't lost at sourcing.<br>They're lost <span class="g">between shortlisted and joined.</span></h1>
-    <div class="tag">In-Sync ATS closes that gap.</div>
+    <div class="tag">In-Sync ATS closes that gap — the grind runs itself, your recruiters close hires.</div>
     <div class="foot">Product footage: TechCorp Solutions — a client workspace</div>
   </div></body></html>`;
 
 const CLOSE_HTML = `<!doctype html><html><head><meta charset="utf-8">${SLIDE_HEAD}</head><body>
   <div class="wrap">
     <div class="logocard"><img src="${INSYNC_LOGO}"/></div>
-    <h1 style="font-size:60px">From an open role<br>to an <span class="g">onboarded hire.</span></h1>
+    <h1 style="font-size:60px">Recruiters close hires.<br>The <span class="g">grind runs itself.</span></h1>
     <div class="num">
-      <div class="chip"><b>2×</b> faster shortlist-to-offer</div>
-      <div class="chip"><b>40%</b> fewer offer drop-offs</div>
-      <div class="chip"><b>0</b> missed follow-ups</div>
+      <div class="chip"><b>1</b> Candidates arrive AI-scored — a ranked list to judge</div>
+      <div class="chip"><b>2</b> The chasing calls itself · ₹3/min — not an afternoon</div>
+      <div class="chip"><b>3</b> Every call in writing — quiet candidates caught</div>
     </div>
+    <div class="num" style="animation-delay:1.05s"><div class="chip"><b>₹799</b> per recruiter / month · live in a day</div></div>
     <div class="cta">Book your 30-minute demo →</div>
     <div class="foot">In-Sync ATS · part of the In-Sync suite by Prosync</div>
   </div></body></html>`;
@@ -105,7 +106,7 @@ export const SCENES = [
 
   {
     name: 't0-hook', account: ACCT.guest,
-    narration: "Sixty-two percent of candidates ghost — after you've done all the sourcing work. Hires aren't lost at the top of the funnel. They're lost between shortlisted and joined.",
+    narration: "Hires aren't lost at sourcing. They're lost between shortlisted and joined. In-Sync ATS closes that gap — the grind runs itself, your recruiters close hires.",
     beats: async ({ page, D, ready }) => {
       await page.setContent(HOOK_HTML, { waitUntil: 'load' });
       const waitUntil = await ready(300);
@@ -115,7 +116,7 @@ export const SCENES = [
 
   {
     name: 't1-ai', account: ACCT.recruiter,
-    narration: "In-Sync ATS closes that gap. Résumés file themselves — and every candidate arrives already scored by A.I.",
+    narration: "One — candidates arrive scored. Résumés file themselves, and every profile comes ranked by A.I. — a list your recruiter judges.",
     beats: async ({ page, at, D, ready }) => {
       await page.goto(candidateUrl(candidateId), { waitUntil: 'networkidle' });
       await page.getByText('Priya Sharma').first().waitFor({ timeout: 20000 });
@@ -131,7 +132,7 @@ export const SCENES = [
 
   {
     name: 't2-call', account: ACCT.recruiter,
-    narration: "The reminder calls, the confirmations, the follow-ups? An A.I. voice agent makes them for you. Watch it dial — while your recruiters keep selling the role.",
+    narration: "Two — the chasing calls itself. Reminders, confirmations, follow-ups: an A.I. voice agent makes them for you. Watch it dial — your recruiters keep selling the role.",
     beats: async ({ page, at, D, ready }) => {
       await page.route('**/functions/v1/ai-screen-candidate', async (route) => {
         const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
@@ -157,7 +158,7 @@ export const SCENES = [
 
   {
     name: 't3-proof', account: ACCT.recruiter,
-    narration: "Every call comes back transcribed and summarized. And when a candidate goes quiet before joining — the system catches it, and brings back the save in writing.",
+    narration: "Three — nothing stays unwritten. Every call comes back transcribed and summarized. And when a candidate goes quiet before joining, the system catches it — and brings back the save in writing.",
     beats: async ({ page, at, D, ready }) => {
       await ensureConfirmationCall();
       // Load + open BEFORE ready(): the teaser cuts straight to the proof.
@@ -178,7 +179,7 @@ export const SCENES = [
 
   {
     name: 't4-close', account: ACCT.guest,
-    narration: "From an open role to an onboarded hire — twice as fast, with forty percent fewer offer drop-offs, and nobody lost to silence. In-Sync ATS. See it live on your own pipeline — book your demo.",
+    narration: "That's In-Sync ATS: candidates arrive scored, the chasing calls itself, and every conversation is in writing — your recruiters just close hires. Seven ninety-nine per recruiter a month, A.I. calls at three rupees a minute, live in a day. Book your demo — bring an open role.",
     beats: async ({ page, D, ready }) => {
       await page.setContent(CLOSE_HTML, { waitUntil: 'load' });
       const waitUntil = await ready(300);
