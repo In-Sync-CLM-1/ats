@@ -73,12 +73,12 @@ Agent: Wonderful. You'll receive the onboarding link today. Congratulations, Pri
 
 // ── The 7 narration blocks (slots are carved from ONE take) ───────────────────
 const NARR = {
-  n0: "Hiring isn't slow at sourcing — it's slow after: screening piles, chasing candidates, offers that go quiet. In-Sync ATS fixes the after.",
+  n0: "Hiring isn't slow at sourcing — it's slow after. A Google Sheet, a WhatsApp group, offers that go quiet. One ghosted joiner: the forty-five-day search again — six weeks of empty seat, the hiring bill twice. In-Sync ATS fixes the after.",
   n1: "It runs your whole hiring pipeline in one place — open roles, candidates, screening calls, onboarding.",
-  n2a: "One — candidates arrive scored. Priya's résumé files itself, and lands already ranked. Your recruiter judges a list, not a pile.",
-  n2b: "Two — the chasing calls itself. The A.I. agent dials Priya's reminder call — three rupees a minute, not a recruiter's afternoon.",
-  n2c: "Three — nothing slips. Priya goes quiet before joining. The system catches it — and brings back her yes, in writing.",
-  n3: "So the math changes: screening, from hours to minutes. Follow-up calling, from an afternoon to three rupees a minute. Ghosted offers — caught, not discovered. Seven ninety-nine per recruiter a month, live in a day.",
+  n2a: "One — candidates arrive scored. Priya's résumé files itself and lands ranked — your recruiter judges a list, not a pile.",
+  n2b: "Two — the chasing calls itself. The A.I. dials Priya's reminder — your recruiter's afternoon goes to closing, not chasing.",
+  n2c: "Three — nothing slips. Priya goes quiet before joining — the system catches it, and brings back her yes, in writing.",
+  n3: "The math changes. Screening: hours to minutes. Calling: the A.I. dials — afternoons go back to closing. Ghosted offers: caught same day, not six weeks late. Seven ninety-nine per recruiter a month, up and running in a day.",
   n4: "In-Sync ATS. Book a thirty-minute demo — bring an open role.",
 };
 const ORDER = ['n0', 'n1', 'n2a', 'n2b', 'n2c', 'n3', 'n4'];
@@ -98,8 +98,8 @@ if (process.env.FRESH_NARRATION !== '1' && existsSync(mp3Path) && existsSync(ali
   }
 }
 if (!Taud) {
-  console.log(`Synthesizing narration (${fullText.length} chars, 1.0x)...`);
-  Taud = await synthTimed(fullText, mp3Path, { speed: 1.0 });
+  console.log(`Synthesizing narration (${fullText.length} chars, 1.1x)...`);
+  Taud = await synthTimed(fullText, mp3Path, { speed: 1.1 });
   writeFileSync(alignPath, JSON.stringify({ text: fullText, duration: Taud.duration, joined: Taud.joined, starts: Taud.starts, ends: Taud.ends }));
 }
 console.log(`Narration ${Taud.duration.toFixed(1)}s`);
@@ -173,16 +173,18 @@ const RAW = [
       });
       await page.goto(candidateUrl(candidateId), { waitUntil: 'networkidle' });
       await page.getByText('Priya Sharma').first().waitFor({ timeout: 20000 });
-      await page.getByText(/ai voice calls/i).first().scrollIntoViewIfNeeded().catch(() => {});
-      await page.waitForTimeout(400);
-      const waitUntil = await ready(400);
-      await waitUntil(at('dials', 4, -0.5));
+      // The chapter lives on the AI-call panel. No in-app zoom — the canvas
+      // proof window crops onto the panel (fx on cardProof), which is
+      // deterministic; here just get the panel in view and start the call early.
+      const panel = page.getByText(/ai voice calls/i).first();
+      await panel.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' })).catch(() => {});
+      await page.waitForTimeout(300);
+      const waitUntil = await ready(300);
+      await waitUntil(1.2);
       const startBtn = page.getByRole('button', { name: /start ai call/i }).first();
-      await clickLocator(page, startBtn, { dur: 500 }).catch(() => startBtn.click().catch(() => {}));
+      await clickLocator(page, startBtn, { dur: 450 }).catch(() => startBtn.click().catch(() => {}));
       await page.getByText(/dialing priya/i).first().waitFor({ timeout: 5000 }).catch(() => {});
-      await zoomTo(page, page.getByText(/dialing priya/i).first(), 1.5, 800).catch(() => {});
       await waitUntil(D);
-      await zoomReset(page, 200);
     } },
   // proof 3 — the save, in writing (AI analysis of the confirmation call)
   { name: 'r-p3-save', account: ACCT.recruiter, slot: 'n2c', beats: async ({ page, at, D, ready }) => {
@@ -248,8 +250,8 @@ const baseCss = (o) => `
     padding:${o === 'tall' ? '14px 30px' : '10px 24px'};font-size:${o === 'tall' ? 28 : 22}px;font-weight:700;color:#bcd3f7}
   .frame{border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.14);
     width:${o === 'tall' ? '94%' : '76%'};position:relative;background:#0a0f1e}
-  .crop{overflow:hidden;width:100%}
-  .crop video{display:block;width:${o === 'tall' ? '140%' : '100%'};margin-left:${o === 'tall' ? '-20%' : '0'}}
+  .crop{overflow:hidden;width:100%;aspect-ratio:16/9}
+  .crop video{display:block;width:100%;height:100%;object-fit:cover}
   .grid{display:grid;grid-template-columns:1fr 1fr;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden;text-align:left}
   .grid .l{font-size:${o === 'tall' ? 26 : 21}px;color:rgba(255,255,255,.55);padding:${o === 'tall' ? '18px 22px' : '14px 24px'};display:flex;align-items:center;justify-content:flex-end;text-align:right}
   .grid .r{font-size:${o === 'tall' ? 26 : 21}px;font-weight:600;color:#7fb5f9;padding:${o === 'tall' ? '18px 22px' : '14px 24px'};border-left:1px solid rgba(255,255,255,.15);display:flex;align-items:center}
@@ -266,7 +268,8 @@ function cardProblem(o) {
     <div class="logocard"><img src="${LOGO}"/></div>
     <div class="kicker gap-l">In-Sync ATS &middot; Applicant Tracking</div>
     <h1 class="gap-m">Hiring isn&rsquo;t slow at sourcing.<br>It&rsquo;s slow <span class="g">after.</span></h1>
-    <div class="sub gap-m">Screening piles &middot; candidate chasing &middot; offers that go quiet.</div>`);
+    <div class="sub gap-m">A Google Sheet &middot; a WhatsApp group &middot; offers that go quiet.</div>
+    <div class="chip gap-m">1 ghosted joiner &asymp; 45 more days of empty seat &middot; the hiring spend, twice</div>`);
 }
 
 function cardCoverage(o, perSec) {
@@ -287,10 +290,14 @@ function cardCoverage(o, perSec) {
     };`);
 }
 
-function cardProof(o, clipName, label) {
+// fx pans/zooms the proof window onto the panel being claimed:
+// {s: scale, x/y: translate % — X = 0.5 minus the target's horizontal centre}.
+function cardProof(o, clipName, label, fx) {
+  const f = (fx && fx[o]) || (o === 'tall' ? { s: 1.4, x: 0, y: 0 } : { s: 1, x: 0, y: 0 });
+  const style = `transform:scale(${f.s}) translate(${f.x}%,${f.y}%)`;
   return page5(o, `
     <div class="chip">${label}</div>
-    <div class="frame gap-m"><div class="crop"><video muted playsinline preload="auto" src="${b64(clipName)}"></video></div></div>`, `
+    <div class="frame gap-m"><div class="crop"><video muted playsinline preload="auto" style="${style}" src="${b64(clipName)}"></video></div></div>`, `
     window.__start = () => { const v=document.querySelector('video'); try{v.play();}catch(e){} };`);
 }
 
@@ -299,10 +306,10 @@ function cardNumbers(o) {
     <div class="kicker">The math changes</div>
     <div class="grid gap-m">
       <div class="l">Screening a role</div><div class="r">Hours &rarr; minutes, AI-ranked</div>
-      <div class="l">Follow-up calling</div><div class="r">An afternoon &rarr; &#8377;3/min AI agent</div>
-      <div class="l">Ghosted offers</div><div class="r">Caught same day &mdash; not at month-end</div>
+      <div class="l">Follow-up calling</div><div class="r">The AI dials &mdash; afternoons go to closing</div>
+      <div class="l">Ghosted offers</div><div class="r">Caught same day &mdash; not 6 empty weeks later</div>
     </div>
-    <div class="sub gap-m" style="color:#e5e9f5;font-weight:600">&#8377;799 per recruiter / month &middot; live in a day</div>`);
+    <div class="sub gap-m" style="color:#e5e9f5;font-weight:600">&#8377;799 per recruiter / month &middot; up and running in a day</div>`);
 }
 
 function cardCta(o) {
@@ -373,7 +380,7 @@ for (const O of ORIENTS) {
     { k: 'n0', html: cardProblem(O.key) },
     { k: 'n1', html: cardCoverage(O.key, covPer) },
     { k: 'n2a', html: cardProof(O.key, 'r-p1-score', '1 &middot; AI ranks every résumé') },
-    { k: 'n2b', html: cardProof(O.key, 'r-p2-dial', '2 &middot; The AI makes the calls') },
+    { k: 'n2b', html: cardProof(O.key, 'r-p2-dial', '2 &middot; The AI makes the calls', { wide: { s: 2.2, x: -30, y: -8 }, tall: { s: 2.4, x: -30, y: -8 } }) },
     { k: 'n2c', html: cardProof(O.key, 'r-p3-save', '3 &middot; The save, in writing') },
     { k: 'n3', html: cardNumbers(O.key) },
     { k: 'n4', html: cardCta(O.key) },
