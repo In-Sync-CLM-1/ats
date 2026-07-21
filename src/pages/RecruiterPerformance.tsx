@@ -1,23 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  BarChart, 
-  Bar, 
-  LineChart, 
-  Line,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  ResponsiveContainer,
-  Cell 
-} from "recharts";
-import { 
-  ChartContainer, 
-  ChartTooltip, 
-  ChartTooltipContent 
-} from "@/components/ui/chart";
+import { EChart, viz, vizAxisLabel, vizSplitLine, vizTooltip } from "@/components/charts/EChart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { Phone, Users, Calendar, Award, TrendingUp } from "lucide-react";
@@ -268,7 +253,162 @@ export default function RecruiterPerformance() {
     );
   }
 
-  const chartColors = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+  // Recruiter Leaderboard — lollipop (2px stem + dot), one hue, sorted
+  const leaderboardOption = useMemo(() => {
+    const rows = recruiterStats.slice(0, 10).map((r) => ({ name: r.recruiter_name, value: r.total_calls }))
+      .sort((a, b) => a.value - b.value);
+    if (!rows.length) return null;
+    return {
+      grid: { left: 130, right: 48, top: 12, bottom: 30 },
+      tooltip: {
+        ...vizTooltip,
+        trigger: 'item',
+        formatter: (p: { name: string; value: number }) => `<b>${p.name}</b><br/>${p.value} calls`,
+      },
+      xAxis: { type: 'value', axisLabel: vizAxisLabel, splitLine: vizSplitLine },
+      yAxis: {
+        type: 'category',
+        data: rows.map((r) => r.name),
+        axisLabel: { ...vizAxisLabel, fontSize: 12 },
+        axisLine: { lineStyle: { color: viz.axis } },
+        axisTick: { show: false },
+      },
+      series: [
+        { type: 'bar', data: rows.map((r) => r.value), barWidth: 2, itemStyle: { color: viz.blueSoft }, silent: true },
+        {
+          type: 'scatter',
+          data: rows.map((r) => ({ name: r.name, value: r.value })),
+          symbolSize: 11,
+          itemStyle: { color: viz.blue, borderColor: viz.surface, borderWidth: 2 },
+          label: {
+            show: true, position: 'right', distance: 6, color: viz.inkSecondary, fontSize: 11,
+            formatter: (p: { value: number }) => p.value.toLocaleString(),
+          },
+        },
+      ],
+    };
+  }, [recruiterStats]);
+
+  // Recruitment Funnel — a real funnel, single-hue ordinal ramp
+  const funnelOption = useMemo(() => {
+    if (!stageData.length) return null;
+    const total = stageData[0]?.count || 1;
+    return {
+      tooltip: {
+        ...vizTooltip,
+        trigger: 'item',
+        formatter: (p: { name: string; value: number }) =>
+          `<b>${p.name}</b><br/>${p.value.toLocaleString()} candidates · ${Math.round((p.value / total) * 100)}%`,
+      },
+      series: [{
+        type: 'funnel',
+        sort: 'none',
+        left: 10, right: 10, top: 8, bottom: 8,
+        minSize: '14%', maxSize: '94%',
+        gap: 4,
+        itemStyle: { borderColor: viz.surface, borderWidth: 2 },
+        label: {
+          position: 'inside', fontSize: 12,
+          formatter: (p: { name: string; value: number }) => `${p.name}  ·  ${p.value.toLocaleString()}`,
+        },
+        data: stageData.map((s, i) => ({
+          name: s.stage, value: s.count,
+          itemStyle: { color: viz.ramp5[Math.min(i, viz.ramp5.length - 1)] },
+          label: { color: i < 2 ? viz.ink : '#ffffff' },
+        })),
+      }],
+    };
+  }, [stageData]);
+
+  // Daily Activity — line with soft area
+  const trendOption = useMemo(() => {
+    if (!dailyActivity.length) return null;
+    return {
+      grid: { left: 44, right: 24, top: 20, bottom: 34 },
+      tooltip: {
+        ...vizTooltip,
+        trigger: 'axis',
+        axisPointer: { type: 'line', lineStyle: { color: viz.axis, width: 1 } },
+      },
+      xAxis: {
+        type: 'category',
+        data: dailyActivity.map((d) => d.date),
+        axisLabel: vizAxisLabel,
+        axisLine: { lineStyle: { color: viz.axis } },
+        axisTick: { show: false },
+        boundaryGap: false,
+      },
+      yAxis: { type: 'value', axisLabel: vizAxisLabel, splitLine: vizSplitLine },
+      series: [{
+        name: 'Calls',
+        type: 'line',
+        data: dailyActivity.map((d) => d.calls),
+        lineStyle: { color: viz.blue, width: 2 },
+        itemStyle: { color: viz.blue, borderColor: viz.surface, borderWidth: 2 },
+        symbol: 'circle',
+        symbolSize: 8,
+        areaStyle: { color: viz.blue, opacity: 0.06 },
+      }],
+    };
+  }, [dailyActivity]);
+
+  // Conversion — dumbbell: connection% and interview% per recruiter
+  const conversionOption = useMemo(() => {
+    const rows = recruiterStats.slice(0, 5);
+    if (!rows.length) return null;
+    return {
+      grid: { left: 130, right: 48, top: 12, bottom: 56 },
+      legend: {
+        bottom: 0,
+        icon: 'circle',
+        textStyle: { color: viz.inkSecondary, fontSize: 12 },
+        data: ['Connection %', 'Interview %'],
+      },
+      tooltip: {
+        ...vizTooltip,
+        trigger: 'item',
+        formatter: (p: { seriesName: string; name: string; value: number[] | number }) => {
+          const v = Array.isArray(p.value) ? p.value[0] : p.value;
+          return `<b>${p.name}</b><br/>${p.seriesName}: ${Math.round(Number(v))}%`;
+        },
+      },
+      xAxis: {
+        type: 'value', max: 100,
+        axisLabel: { ...vizAxisLabel, formatter: '{value}%' },
+        splitLine: vizSplitLine,
+      },
+      yAxis: {
+        type: 'category',
+        data: rows.map((r) => r.recruiter_name),
+        axisLabel: { ...vizAxisLabel, fontSize: 12 },
+        axisLine: { lineStyle: { color: viz.axis } },
+        axisTick: { show: false },
+      },
+      series: [
+        {
+          type: 'custom',
+          silent: true,
+          renderItem: (params: { dataIndex: number }, api: { value: (i: number) => number; coord: (v: [number, number]) => [number, number] }) => {
+            const [x1, y] = api.coord([api.value(0), params.dataIndex]);
+            const [x2] = api.coord([api.value(1), params.dataIndex]);
+            return { type: 'line', shape: { x1, y1: y, x2, y2: y }, style: { stroke: viz.axis, lineWidth: 2 } };
+          },
+          data: rows.map((r) => [r.connection_rate, r.interview_rate]),
+          z: 1,
+        },
+        {
+          name: 'Connection %', type: 'scatter',
+          data: rows.map((r) => ({ name: r.recruiter_name, value: [r.connection_rate, r.recruiter_name] })),
+          symbolSize: 11, itemStyle: { color: viz.blue, borderColor: viz.surface, borderWidth: 2 }, z: 2,
+        },
+        {
+          name: 'Interview %', type: 'scatter',
+          data: rows.map((r) => ({ name: r.recruiter_name, value: [r.interview_rate, r.recruiter_name] })),
+          symbolSize: 11, itemStyle: { color: viz.orange, borderColor: viz.surface, borderWidth: 2 }, z: 2,
+        },
+      ],
+    };
+  }, [recruiterStats]);
 
   return (
     <div className="px-8 py-6 space-y-6">
@@ -397,22 +537,8 @@ export default function RecruiterPerformance() {
             <CardDescription>Top performers by calls made</CardDescription>
           </CardHeader>
           <CardContent>
-            {recruiterStats.length > 0 ? (
-              <ChartContainer config={{ calls: { label: "Calls", color: "hsl(var(--chart-1))" } }}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={recruiterStats.slice(0, 10)} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" fontSize={12} />
-                    <YAxis dataKey="recruiter_name" type="category" width={120} fontSize={12} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="total_calls" radius={[0, 4, 4, 0]}>
-                      {recruiterStats.slice(0, 10).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+            {leaderboardOption ? (
+              <EChart option={leaderboardOption} height={300} />
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">No data</div>
             )}
@@ -426,22 +552,8 @@ export default function RecruiterPerformance() {
             <CardDescription>Candidates at each stage</CardDescription>
           </CardHeader>
           <CardContent>
-            {stageData.length > 0 ? (
-              <ChartContainer config={{ count: { label: "Count", color: "hsl(var(--chart-2))" } }}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stageData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="stage" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                      {stageData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+            {funnelOption ? (
+              <EChart option={funnelOption} height={300} />
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">No data</div>
             )}
@@ -455,24 +567,8 @@ export default function RecruiterPerformance() {
             <CardDescription>Calls per day this month</CardDescription>
           </CardHeader>
           <CardContent>
-            {dailyActivity.length > 0 ? (
-              <ChartContainer config={{ calls: { label: "Calls", color: "hsl(var(--chart-3))" } }}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dailyActivity}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="date" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="calls" 
-                      stroke="hsl(var(--chart-3))" 
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--chart-3))" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+            {trendOption ? (
+              <EChart option={trendOption} height={300} />
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">No data</div>
             )}
@@ -486,22 +582,8 @@ export default function RecruiterPerformance() {
             <CardDescription>Interview and connection rates</CardDescription>
           </CardHeader>
           <CardContent>
-            {recruiterStats.length > 0 ? (
-              <ChartContainer config={{ 
-                connection_rate: { label: "Connection %", color: "hsl(var(--chart-4))" },
-                interview_rate: { label: "Interview %", color: "hsl(var(--chart-5))" }
-              }}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={recruiterStats.slice(0, 5)}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="recruiter_name" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="connection_rate" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="interview_rate" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+            {conversionOption ? (
+              <EChart option={conversionOption} height={300} />
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">No data</div>
             )}
