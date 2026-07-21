@@ -33,3 +33,6 @@ supabase/.temp/
 .env
 .env.local
 .env.*.local
+
+remotion-promo/node_modules/
+remotion-promo/out/
