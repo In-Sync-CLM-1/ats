@@ -244,15 +244,6 @@ export default function RecruiterPerformance() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="px-8 py-6">
-        <h1 className="text-3xl font-bold mb-2">Recruiter Performance</h1>
-        <p className="text-muted-foreground">Loading performance metrics...</p>
-      </div>
-    );
-  }
-
   // Recruiter Leaderboard — lollipop (2px stem + dot), one hue, sorted
   const leaderboardOption = useMemo(() => {
     const rows = recruiterStats.slice(0, 10).map((r) => ({ name: r.recruiter_name, value: r.total_calls }))
@@ -409,6 +400,15 @@ export default function RecruiterPerformance() {
       ],
     };
   }, [recruiterStats]);
+
+  if (loading) {
+    return (
+      <div className="px-8 py-6">
+        <h1 className="text-3xl font-bold mb-2">Recruiter Performance</h1>
+        <p className="text-muted-foreground">Loading performance metrics...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="px-8 py-6 space-y-6">
