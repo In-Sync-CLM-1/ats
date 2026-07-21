@@ -14,26 +14,28 @@ const here = dirname(fileURLToPath(import.meta.url));
 const dir = join(here, 'recordings', 'scenes');
 
 export const NARR = {
-  n0: "Candidates sourced — but where does each one stand? Eight hundred candidates, three spreadsheets, duplicates, missed follow-ups, lost résumés. In-Sync ATS puts your whole pipeline on one live screen.",
-  n1: "One system runs it end to end: client mandates with deadlines, a live candidate pipeline, bulk résumé import, KYC onboarding, calling built in, and recruiter analytics.",
-  n2a: "One — every role has a deadline. Each mandate carries positions, priority, and target date — you see a role slipping before the client calls.",
-  n2b: "Two — candidates arrive scored. Bulk-import a résumé dump: parsed, de-duplicated, A.I.-scored — your recruiter judges a ranked list, not a pile.",
-  n2c: "Three — verified before placed. Aadhaar and PAN checks run in the flow, documents filed on the profile — audit-ready. No bad hire reaches your client.",
-  n2d: "And it adds up. Calls, interviews, offers, joins — every recruiter, every mandate, one dashboard. When the review asks how hiring is going, you just show them.",
-  n3: "The result? A clean, scored database. Verified placements. And up to sixty percent faster time-to-fill.",
+  n0: "Candidates sourced — but where does each one stand? Eight hundred candidates across three spreadsheets. In-Sync ATS puts your whole pipeline on one live screen.",
+  n1: "One system runs it end to end: mandates with deadlines, a public careers page, a live pipeline, bulk résumé import, KYC onboarding, built-in calling, and recruiter analytics.",
+  n2a: "One — every role has a deadline. Positions, priority, target date — you see a mandate slipping before the client calls.",
+  n2b: "Two — candidates arrive scored. They apply on your careers page or land in a bulk import — parsed, de-duplicated, scored by the A.I. into a ranked list.",
+  n2c: "Three — verified before placed. Aadhaar and PAN checks in the flow, audit-ready — and candidate data protected under the D.P.D.P. Act.",
+  n2e: "Four — the joining is guarded. Between the offer and day one, the A.I. calls the reminders — a quiet candidate is caught, and the yes comes back in writing.",
+  n2d: "And it adds up: every recruiter, every mandate, one dashboard — when the review asks how hiring is going, you just show them.",
+  n3: "The result? A clean, scored database. Verified placements. Up to sixty percent faster time-to-fill.",
   n4: "In-Sync ATS. Sourcing is the easy part... We run the pipeline. Book your free demo, and know where every candidate stands.",
 };
-const ORDER = ['n0', 'n1', 'n2a', 'n2b', 'n2c', 'n2d', 'n3', 'n4'];
+const ORDER = ['n0', 'n1', 'n2a', 'n2b', 'n2c', 'n2e', 'n2d', 'n3', 'n4'];
 
 // scene key in the Remotion comp -> narration slot + phrases to mark
 const SCENE_MAP = [
   { k: 'hook', slot: 'n0', marks: { sub: 'where does each', pct: 'Eight hundred', never: 'three spreadsheets', brand: 'In-Sync ATS puts' } },
   { k: 'sweep', slot: 'n1', marks: {
-    f0: 'client mandates', f1: 'live candidate pipeline', f2: 'bulk résumé import',
-    f3: 'KYC onboarding', f4: 'calling built', f5: 'recruiter analytics' } },
-  { k: 'p1', slot: 'n2a', marks: { chip: 'positions, priority' } },
+    f0: 'mandates with deadlines', f1: 'public careers page', f2: 'a live pipeline',
+    f3: 'bulk résumé import', f4: 'KYC onboarding', f5: 'built-in calling', f6: 'recruiter analytics' } },
+  { k: 'p1', slot: 'n2a', marks: { chip: 'Positions, priority' } },
   { k: 'p2', slot: 'n2b', marks: { chip: 'parsed' } },
   { k: 'p3', slot: 'n2c', marks: { chip: 'Aadhaar' } },
+  { k: 'p4', slot: 'n2e', marks: { chip: 'calls the reminders' } },
   { k: 'adds', slot: 'n2d', marks: { chip: 'one dashboard', show: 'you just show them' } },
   { k: 'outcome', slot: 'n3', marks: { l0: 'clean', l1: 'Verified placements', l2: 'sixty percent' } },
   { k: 'cta', slot: 'n4', marks: { btn: 'Book your free demo', url: 'know where every' } },

@@ -45,5 +45,15 @@ await shot('verify', '/hr-onboarding', /Onboarding/, async (p) => {
 await shot('calling', '/calling-dashboard', /Calling|Call/);
 await shot('performance', '/recruiter-performance', /Performance|Recruiter/);
 await ctx.close();
+
+// public careers page — shot logged-out, as applicants see it
+const ctx2 = await browser.newContext({ viewport: VP, deviceScaleFactor: 2 });
+const p2 = await ctx2.newPage();
+await p2.goto(`${BASE}/careers/techcorp`, { waitUntil: 'networkidle' });
+await p2.getByText(/open|position|role/i).first().waitFor({ timeout: 25000 }).catch(() => {});
+await p2.waitForTimeout(1500);
+await p2.screenshot({ path: join(out, 'careers.png') });
+console.log('  shot careers');
+await ctx2.close();
 await browser.close();
 console.log('done');

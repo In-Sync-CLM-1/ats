@@ -36,3 +36,5 @@ supabase/.temp/
 
 remotion-promo/node_modules/
 remotion-promo/out/
+scripts/recordings/
+UsersAdminDownloads*

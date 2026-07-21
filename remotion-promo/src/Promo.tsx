@@ -64,8 +64,8 @@ const Hook: React.FC = () => {
 };
 
 // ── Scene: Sweep (device cycling module stills, cuts locked to the voice) ────
-const SWEEP_KEYS = ['mandates', 'candidates', 'import', 'verify', 'calling', 'performance'];
-const SWEEP_LABELS = ['Mandates & SLAs', 'Candidate pipeline', 'Bulk import', 'KYC onboarding', 'Built-in calling', 'Recruiter analytics'];
+const SWEEP_KEYS = ['mandates', 'careers', 'candidates', 'import', 'verify', 'calling', 'performance'];
+const SWEEP_LABELS = ['Mandates & SLAs', 'Public careers page', 'Candidate pipeline', 'Bulk import', 'KYC onboarding', 'Built-in calling', 'Recruiter analytics'];
 
 const sweepIdx = (frame: number, M: Record<string, number>) => {
   let idx = 0;
@@ -200,9 +200,10 @@ export const Promo: React.FC<{ vertical?: boolean }> = ({ vertical }) => {
   const comp: Record<string, React.ReactNode> = {
     hook: <Hook />, sweep: <Sweep />, outcome: <Outcome />, cta: <Cta />,
     p1: <Power k="p1" n="One" title="Deadlines you can see." chip={<>Priority &middot; positions &middot; days-left, live</>} src="mandates" side="R" accentColor={C.teal} />,
-    p2: <Power k="p2" n="Two" title="They arrive scored." chip={<>Parsed &middot; de-duplicated &middot; AI-scored</>} src="candidates" side="L" accentColor={C.violet} />,
-    p3: <Power k="p3" n="Three" title="Verified before placed." chip={<>Aadhaar / PAN &middot; audit-ready</>} src="verify" side="R" accentColor={C.pink} />,
-    adds: <Power k="adds" n="And it adds up" title="Every recruiter. One view." chip={<>Calls &rarr; interviews &rarr; offers &rarr; hired</>} src="performance" side="L" accentColor={'#a78bfa'} />,
+    p2: <Power k="p2" n="Two" title="They arrive scored." chip={<>Careers page &middot; bulk import &middot; AI score</>} src="candidates" side="L" accentColor={C.violet} />,
+    p3: <Power k="p3" n="Three" title="Verified & protected." chip={<>Aadhaar / PAN &middot; DPDP-compliant data</>} src="verify" side="R" accentColor={C.pink} />,
+    p4: <Power k="p4" n="Four" title="The joining, guarded." chip={<>AI reminder calls &middot; offer &rarr; day one</>} src="calling" side="L" accentColor={'#a78bfa'} />,
+    adds: <Power k="adds" n="And it adds up" title="Every recruiter. One view." chip={<>Calls &rarr; interviews &rarr; offers &rarr; hired</>} src="performance" side="R" accentColor={C.teal} />,
   };
   let acc = 0;
   const seqs = SCENES.map((sc, i) => {
