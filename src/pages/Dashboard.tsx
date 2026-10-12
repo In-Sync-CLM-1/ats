@@ -51,6 +51,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface TopRecruiter {
   id: string;
@@ -164,7 +165,7 @@ const getMonthOptions = () => {
 };
 
 export default function Dashboard() {
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
+  const [selectedMonth, setSelectedMonth] = useUrlState("month", format(new Date(), "yyyy-MM"));
   const [stats, setStats] = useState<DashboardStats>({
     totalCandidates: 0,
     activeCandidates: 0,

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAuthCheck } from "@/hooks/useAuthCheck";
 import { usePaginatedQuery } from "@/hooks/usePaginatedQuery";
 import { DataTable, DataTableColumn } from "@/components/data-table/DataTable";
+import { UrlTabs } from "@/components/UrlTabs";
 
 interface EmailTemplate {
   id: string;
@@ -164,7 +165,7 @@ export default function Templates() {
         </p>
       </div>
 
-        <Tabs defaultValue="email" className="space-y-6">
+        <UrlTabs param="templates_tab" defaultValue="email" className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="email" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -293,7 +294,7 @@ export default function Templates() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+        </UrlTabs>
     </div>
   );
 }

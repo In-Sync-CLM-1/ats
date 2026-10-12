@@ -46,6 +46,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BulkCallCandidate } from "@/pages/CallingDashboard";
+import { useUrlJsonState } from "@/hooks/useUrlState";
 
 interface Candidate {
   id: string;
@@ -122,7 +123,7 @@ const Candidates = () => {
   const [historyCandidate, setHistoryCandidate] = useState<Candidate | null>(null);
   const [showWhatsAppDialog, setShowWhatsAppDialog] = useState(false);
   const [whatsAppCandidate, setWhatsAppCandidate] = useState<Candidate | null>(null);
-  const [filters, setFilters] = useState<FilterState>({
+  const [filters, setFilters] = useUrlJsonState<FilterState>("f", {
     candidateSearch: { value: "", operator: "contains" },
     highestQualification: [],
     keySkills: { value: "", operator: "contains" },

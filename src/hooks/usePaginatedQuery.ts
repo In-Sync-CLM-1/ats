@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { toast } from "sonner";
 import { PostgrestFilterBuilder } from "@supabase/postgrest-js";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface UsePaginatedQueryOptions<T> {
   queryKey: string[];
@@ -17,8 +17,8 @@ export function usePaginatedQuery<T>({
   initialItemsPerPage = 10,
   onError,
 }: UsePaginatedQueryOptions<T>) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
+  const [currentPage, setCurrentPage] = useUrlState("page", 1);
+  const [itemsPerPage, setItemsPerPage] = useUrlState("ipp", initialItemsPerPage);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: [...queryKey, currentPage, itemsPerPage],

@@ -6,6 +6,7 @@ import { EChart, viz, vizAxisLabel, vizSplitLine, vizTooltip } from "@/component
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { Phone, Users, Calendar, Award, TrendingUp } from "lucide-react";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface RecruiterStats {
   recruiter_id: string;
@@ -35,8 +36,8 @@ interface RecruiterOption {
 }
 
 export default function RecruiterPerformance() {
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
-  const [selectedRecruiter, setSelectedRecruiter] = useState<string>("all");
+  const [selectedMonth, setSelectedMonth] = useUrlState("month", format(new Date(), "yyyy-MM"));
+  const [selectedRecruiter, setSelectedRecruiter] = useUrlState<string>("recruiter", "all");
   const [recruiters, setRecruiters] = useState<RecruiterOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [recruiterStats, setRecruiterStats] = useState<RecruiterStats[]>([]);

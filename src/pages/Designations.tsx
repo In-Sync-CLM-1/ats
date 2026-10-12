@@ -16,6 +16,7 @@ import { DataTable, DataTableColumn } from "@/components/data-table/DataTable";
 import { FormDialog } from "@/components/forms/FormDialog";
 import { FormField } from "@/components/forms/FormField";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface Designation {
   id: string;
@@ -36,7 +37,7 @@ interface DesignationFormData {
 
 export default function Designations() {
   useAuthCheck();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useUrlState("q", "");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [designationToDelete, setDesignationToDelete] = useState<Designation | null>(null);
   const [formData, setFormData] = useState<DesignationFormData>({

@@ -11,10 +11,11 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { supabase } from "@/integrations/supabase/client";
+import { useUrlState } from "@/hooks/useUrlState";
 
 export default function Tasks() {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "in_progress" | "completed" | "cancelled">("all");
+  const [statusFilter, setStatusFilter] = useUrlState<"all" | "pending" | "in_progress" | "completed" | "cancelled">("status", "all");
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);

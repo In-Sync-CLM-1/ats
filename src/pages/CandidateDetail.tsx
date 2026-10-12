@@ -21,6 +21,7 @@ import { Phone, Mail, MapPin, Briefcase, GraduationCap, Calendar, FileText, Exte
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UrlTabs } from "@/components/UrlTabs";
 
 const DEFAULT_STAGES = ["Applied", "Screening", "Interview", "Offer", "Selected", "Joined"];
 
@@ -285,7 +286,7 @@ export default function CandidateDetail() {
         />
       )}
 
-      <Tabs defaultValue="details">
+      <UrlTabs param="candidatedetail_tab" defaultValue="details">
         <TabsList className="grid w-full max-w-xl grid-cols-4">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="history">Call History</TabsTrigger>
@@ -726,7 +727,7 @@ export default function CandidateDetail() {
             )}
           </div>
         </TabsContent>
-      </Tabs>
+      </UrlTabs>
     </div>
   );
 }
