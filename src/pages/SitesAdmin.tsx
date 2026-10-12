@@ -13,6 +13,7 @@ import { Plus, Search, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { INDIAN_STATES, getCitiesByStateCode, generateClientCode } from "@/lib/indianLocations";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface Site {
   id: string;
@@ -63,7 +64,7 @@ const initialFormData: SiteFormData = {
 
 export default function SitesAdmin() {
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useUrlState("q", "");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSite, setEditingSite] = useState<Site | null>(null);
   const [formData, setFormData] = useState<SiteFormData>(initialFormData);

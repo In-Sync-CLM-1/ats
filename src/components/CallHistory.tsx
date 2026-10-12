@@ -11,6 +11,7 @@ import { Phone, PlayCircle, Search, FileText, Plus, Edit2, BrainCircuit, Loader2
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { CallDispositionDialog } from "./CallDispositionDialog";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface CallHistoryProps {
   candidateId?: string;
@@ -79,8 +80,8 @@ const formatDuration = (seconds: number) => {
 
 export function CallHistory({ candidateId, limit = 50, showFilters = true }: CallHistoryProps) {
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useUrlState<string>("chstatus", 'all');
+  const [searchQuery, setSearchQuery] = useUrlState("chq", '');
   const [dispositionDialogOpen, setDispositionDialogOpen] = useState(false);
   const [selectedCallLog, setSelectedCallLog] = useState<CallLog | null>(null);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);

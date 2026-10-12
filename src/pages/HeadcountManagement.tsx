@@ -9,6 +9,7 @@ import { Search, Save, Check, X, Users, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { SiteSearchInput } from "@/components/zonal/SiteSearchInput";
 import { JobTitleSearchInput } from "@/components/zonal/JobTitleSearchInput";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface HeadcountAgreement {
   id: string;
@@ -40,7 +41,7 @@ export default function HeadcountManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<EditValues>({ required_male: 0, required_female: 0 });
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useUrlState("q", "");
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);

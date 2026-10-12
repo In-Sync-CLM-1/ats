@@ -17,6 +17,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { getRoleVariant, getRoleDisplayName } from "@/lib/rolePermissions";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
 import { MultiSelectFilter } from "@/components/ui/multi-select-filter";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface User {
   id: string;
@@ -64,7 +65,7 @@ export default function Users() {
   const { permissions } = useUserPermissions();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useUrlState("q", "");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isCreating, setIsCreating] = useState(false);

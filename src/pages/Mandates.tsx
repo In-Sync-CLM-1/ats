@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { differenceInDays, format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface Mandate {
   id: string;
@@ -56,12 +57,12 @@ interface Recruiter {
 
 export default function Mandates() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [recruiterFilter, setRecruiterFilter] = useState<string>("all");
-  const [workModeFilter, setWorkModeFilter] = useState<string>("all");
-  const [employmentTypeFilter, setEmploymentTypeFilter] = useState<string>("all");
+  const [search, setSearch] = useUrlState("q", "");
+  const [statusFilter, setStatusFilter] = useUrlState<string>("status", "all");
+  const [priorityFilter, setPriorityFilter] = useUrlState<string>("priority", "all");
+  const [recruiterFilter, setRecruiterFilter] = useUrlState<string>("recruiter", "all");
+  const [workModeFilter, setWorkModeFilter] = useUrlState<string>("mode", "all");
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useUrlState<string>("etype", "all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);

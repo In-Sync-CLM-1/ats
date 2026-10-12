@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface PipelineStage {
   id: string;
@@ -28,10 +29,10 @@ export default function PipelineStages() {
   const navigate = useNavigate();
   const [stages, setStages] = useState<PipelineStage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useUrlState("q", "");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState<PipelineStage | null>(null);
-  const [stageTypeFilter, setStageTypeFilter] = useState<string>("candidate");
+  const [stageTypeFilter, setStageTypeFilter] = useUrlState<string>("stage", "candidate");
   
   const [formData, setFormData] = useState({
     name: "",

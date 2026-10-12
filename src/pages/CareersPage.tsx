@@ -16,6 +16,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface Mandate {
   id: string;
@@ -45,8 +46,8 @@ export default function CareersPage() {
   const [org, setOrg] = useState<OrgInfo | null>(null);
   const [mandates, setMandates] = useState<Mandate[]>([]);
   const [selectedMandate, setSelectedMandate] = useState<Mandate | null>(null);
-  const [search, setSearch] = useState("");
-  const [workModeFilter, setWorkModeFilter] = useState("");
+  const [search, setSearch] = useUrlState("q", "");
+  const [workModeFilter, setWorkModeFilter] = useUrlState("mode", "");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [submitted, setSubmitted] = useState(false);

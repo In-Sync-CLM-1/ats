@@ -5,7 +5,7 @@ import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { format } from "date-fns";
 import { Megaphone, Sparkles, Bug, Trash2, TrendingUp, ExternalLink, CheckCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useUrlState } from "@/hooks/useUrlState";
 
 const getAnnouncementIcon = (type: string) => {
   switch (type) {
@@ -31,7 +31,7 @@ const getAnnouncementBadge = (type: string) => {
 
 export default function WhatsNew() {
   const { announcements, viewedAnnouncements, markAsViewed, dismissAnnouncement } = useAnnouncements();
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useUrlState<string>("filter", "all");
 
   const filteredAnnouncements = filter === "all" 
     ? announcements 

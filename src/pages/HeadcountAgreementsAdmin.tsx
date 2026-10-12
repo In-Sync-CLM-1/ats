@@ -15,6 +15,7 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { SiteSearchInput } from "@/components/zonal/SiteSearchInput";
 import { JobTitleSearchInput } from "@/components/zonal/JobTitleSearchInput";
 import { ClientSearchInput } from "@/components/zonal/ClientSearchInput";
+import { useUrlState } from "@/hooks/useUrlState";
 
 interface HeadcountAgreement {
   id: string;
@@ -53,7 +54,7 @@ const initialFormData: FormData = {
 
 export default function HeadcountAgreementsAdmin() {
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useUrlState("q", "");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<HeadcountAgreement | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
